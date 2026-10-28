@@ -1,0 +1,28 @@
+{
+  "name": "01-TDR-a11y-contrast-checker-cursor-01",
+  "version": "1.0.0",
+  "description": "WCAG contrast checker for Figma selections and colors",
+  "main": "code.js",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "bundle:main": "esbuild code.ts --bundle --outfile=code.js --target=es2020",
+    "bundle:ui": "esbuild ui.ts --bundle --outfile=ui.js --target=es2020 && node scripts/inline-ui.cjs",
+    "bundle": "npm run bundle:main && npm run bundle:ui",
+    "build": "npm run typecheck && npm run bundle",
+    "test:contrast": "esbuild contrast.ts --bundle --outfile=.tmp-contrast.cjs --format=cjs --platform=node && node scripts/smoke-contrast.cjs && rm -f .tmp-contrast.cjs",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "watch": "node scripts/watch.cjs"
+  },
+  "author": "",
+  "license": "",
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@figma/eslint-plugin-figma-plugins": "*",
+    "@figma/plugin-typings": "*",
+    "esbuild": "^0.25.0",
+    "eslint": "^9.39.4",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.57.1"
+  }
+}

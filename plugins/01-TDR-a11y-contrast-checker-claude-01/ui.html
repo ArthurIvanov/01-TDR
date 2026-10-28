@@ -1,0 +1,732 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contrast A11y</title>
+<style>
+  /* Own palette; light by default, dark when Figma adds .figma-dark (themeColors). */
+  :root {
+    --bg: #ffffff; --surface: #f6f6f8; --surface-2: #ececf0; --line: #e4e4ea;
+    --text: #1c1c24; --muted: #6b6b7b;
+    --accent: #5b45d6; --accent-hover: #4c38bd; --accent-soft: #eeebfc; --on-accent: #fff;
+    --ok: #137a45; --ok-bg: #e3f5ea; --ok-strong: #137a45; --on-ok: #fff;
+    --bad: #c42b31; --bad-bg: #fdebec;
+    --warn: #8a5a00; --warn-bg: #fff4d6;
+    --shadow: 0 8px 24px rgba(20, 20, 40, .16), 0 0 0 1px rgba(20, 20, 40, .06);
+  }
+  .figma-dark {
+    --bg: #1b1b21; --surface: #25252d; --surface-2: #30303a; --line: #34343f;
+    --text: #f2f2f6; --muted: #a0a0b0;
+    --accent: #8b78f5; --accent-hover: #9d8df7; --accent-soft: #2c2750; --on-accent: #14102e;
+    --ok: #5fd08e; --ok-bg: #173826; --ok-strong: #3fb472; --on-ok: #0b2416;
+    --bad: #ff7d83; --bad-bg: #3d1d20;
+    --warn: #f0be5a; --warn-bg: #3a2e12;
+    --shadow: 0 8px 24px rgba(0, 0, 0, .5), 0 0 0 1px rgba(255, 255, 255, .08);
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; display: flex; flex-direction: column; font: 12px/18px Inter, system-ui, sans-serif; color: var(--text); background: var(--bg); overflow: hidden; }
+  .grow { flex: 1; min-width: 0; }
+  .muted { color: var(--muted); }
+  svg { display: block; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* buttons */
+  button { font: inherit; color: inherit; cursor: pointer; }
+  .btn { height: 32px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); font-weight: 600; white-space: nowrap; flex: none; }
+  .btn:hover:not(:disabled) { background: var(--surface); }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .btn.primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
+  .btn.sm { height: 28px; padding: 0 10px; border-radius: 7px; }
+  .btn.ghost { border-color: transparent; background: transparent; }
+  .btn.ghost:hover:not(:disabled) { background: var(--surface-2); }
+  .btn.icon { width: 28px; padding: 0; display: grid; place-items: center; }
+  .btn.icon svg { width: 16px; height: 16px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  /* top bar */
+  .top { position: relative; display: flex; align-items: center; gap: 8px; padding: 10px 12px; }
+  .seg { display: flex; flex: 1; padding: 2px; border-radius: 9px; background: var(--surface-2); }
+  .seg button { flex: 1; height: 28px; border: 0; border-radius: 7px; background: transparent; font-weight: 600; color: var(--muted); }
+  .seg button.on { background: var(--bg); color: var(--text); box-shadow: 0 1px 2px rgba(0, 0, 0, .12); }
+  .pop { position: absolute; right: 12px; top: 46px; z-index: 10; width: 244px; padding: 12px; border-radius: 12px; background: var(--bg); box-shadow: var(--shadow); display: none; flex-direction: column; gap: 12px; }
+  .pop.open { display: flex; }
+  .pop h4 { margin: 0 0 6px; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .pop .seg button { height: 26px; }
+  .switch { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .switch input { appearance: none; -webkit-appearance: none; width: 32px; height: 18px; border-radius: 9px; background: var(--surface-2); position: relative; margin: 0; flex: none; cursor: pointer; transition: background .15s; }
+  .switch input::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, .3); transition: transform .15s; }
+  .switch input:checked { background: var(--accent); }
+  .switch input:checked::after { transform: translateX(14px); }
+  .note { font-size: 11px; line-height: 15px; color: var(--muted); margin-top: 4px; }
+
+  /* summary */
+  .summary { display: flex; align-items: center; gap: 8px; margin: 0 12px; padding: 10px 12px; border-radius: 10px; background: var(--surface); }
+  .sum-title { font-size: 14px; line-height: 20px; font-weight: 700; }
+  .sum-title.ok { color: var(--ok); } .sum-title.bad { color: var(--bad); }
+  .sum-title b { font-weight: 700; }
+  .sum-sub { color: var(--muted); font-size: 11px; line-height: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .filters { display: flex; align-items: center; gap: 4px; padding: 8px 12px 4px; }
+  .tab { height: 26px; padding: 0 10px; border-radius: 13px; border: 0; background: transparent; color: var(--muted); font-weight: 600; }
+  .tab i { font-style: normal; margin-left: 4px; opacity: .8; font-variant-numeric: tabular-nums; }
+  .tab:hover { background: var(--surface); }
+  .tab.on { background: var(--accent-soft); color: var(--accent); }
+
+  /* list */
+  #list { flex: 1; overflow-y: auto; padding: 4px 8px 8px; min-height: 80px; }
+  .item { display: flex; align-items: center; gap: 10px; padding: 6px 8px; min-height: 44px; border-radius: 10px; cursor: pointer; border: 1px solid transparent; }
+  .item:hover { background: var(--surface); }
+  .item.sel { background: var(--accent-soft); border-color: var(--accent); }
+  .item.skip { opacity: .55; cursor: default; }
+  .item.skip:hover { background: transparent; }
+  .sw { width: 30px; height: 30px; border-radius: 8px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .14); display: grid; place-items: center; font-weight: 700; font-size: 12px; flex: none; }
+  .meta { flex: 1; min-width: 0; }
+  .t { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .s { color: var(--muted); font-size: 11px; line-height: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .val { font-variant-numeric: tabular-nums; color: var(--muted); flex: none; }
+  .pill { flex: none; min-width: 52px; text-align: center; padding: 0 8px; height: 20px; line-height: 20px; border-radius: 10px; font-size: 11px; font-weight: 700; background: var(--surface-2); color: var(--muted); }
+  .pill.aaa { background: var(--ok-strong); color: var(--on-ok); }
+  .pill.aa { background: var(--ok-bg); color: var(--ok); }
+  .pill.fail { background: var(--bad-bg); color: var(--bad); }
+  .mflag { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--warn); }
+  .empty { padding: 36px 28px; text-align: center; color: var(--muted); }
+  .empty svg { width: 36px; height: 36px; margin: 0 auto 10px; opacity: .6; }
+  .empty b { display: block; color: var(--text); font-size: 13px; margin-bottom: 4px; }
+
+  /* editor sheet */
+  #sheet { display: none; flex-direction: column; gap: 10px; padding: 12px 12px 0; max-height: 54%; overflow-y: auto; border-top: 1px solid var(--line); background: var(--bg); }
+  #sheet.open { display: flex; }
+  .sheet-head { display: flex; align-items: center; gap: 8px; }
+  #pv { display: flex; align-items: center; gap: 12px; padding: 8px 14px; border-radius: 10px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .12); }
+  #pv .aa { font-size: 24px; line-height: 28px; font-weight: 700; flex: none; }
+  #pv .tx { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #pv .score { text-align: right; flex: none; }
+  #pv .score b { display: block; font-size: 18px; line-height: 22px; font-variant-numeric: tabular-nums; }
+  .big-pill { margin-top: 2px; display: inline-block; }
+  .field label { display: block; font-size: 11px; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+  .field.off { opacity: .45; pointer-events: none; }
+  .frow { display: grid; grid-template-columns: 32px 88px 1fr 28px; align-items: center; gap: 8px; }
+  input[type=text] { height: 32px; width: 100%; padding: 0 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--text); font: inherit; text-transform: uppercase; }
+  input[type=text]:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  input[type=text].bad { border-color: var(--bad); }
+  input[type=color] { appearance: none; -webkit-appearance: none; width: 32px; height: 32px; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: none; cursor: pointer; overflow: hidden; }
+  input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
+  input[type=color]::-webkit-color-swatch { border: 0; }
+  input[type=range] { width: 100%; height: 10px; margin: 0; border-radius: 5px; appearance: none; -webkit-appearance: none; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .15); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, .4), 0 1px 4px rgba(0, 0, 0, .3); cursor: pointer; }
+  .lv { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .fix { display: flex; align-items: center; gap: 8px; }
+  .fix .btn { flex: 1; }
+  .fix span { flex: none; color: var(--muted); font-weight: 600; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px 0 6px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); font-size: 11px; max-width: 100%; }
+  button.chip:hover { background: var(--surface); border-color: var(--accent); }
+  .chip.fail { border-color: var(--bad); color: var(--bad); }
+  .chip i { width: 12px; height: 12px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .2); flex: none; }
+  .chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  details { border: 1px solid var(--line); border-radius: 10px; }
+  summary { list-style: none; cursor: pointer; padding: 8px 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: ''; width: 6px; height: 6px; border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor; transform: rotate(-45deg); transition: transform .15s; margin-right: 4px; }
+  details[open] summary::before { transform: rotate(45deg); }
+  .dbody { display: flex; flex-direction: column; gap: 10px; padding: 0 12px 12px; }
+  .hint { padding: 8px 10px; border-radius: 8px; background: var(--warn-bg); color: var(--warn); font-size: 11px; line-height: 15px; }
+  .hint:empty { display: none; }
+  .foot { display: flex; align-items: center; gap: 8px; }
+  #sheet > .foot { position: sticky; bottom: 0; margin: 0 -12px; padding: 10px 12px; background: var(--bg); border-top: 1px solid var(--line); }
+
+  /* bulk */
+  #bulkbar { display: none; flex-direction: column; gap: 10px; padding: 12px; border-top: 1px solid var(--line); }
+  #bulkbar.open { display: flex; }
+  select { height: 28px; padding: 0 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--text); font: inherit; }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="seg" role="tablist" id="modeSeg" aria-label="Режим проверки">
+    <button role="tab" id="mLayers" class="on">Слои</button>
+    <button role="tab" id="mPair">Пара слоёв</button>
+  </div>
+  <button class="btn ghost icon" id="gear" title="Настройки" aria-label="Настройки" aria-expanded="false">
+    <svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.5v1.6M8 12.9v1.6M1.5 8h1.6M12.9 8h1.6M3.4 3.4l1.1 1.1M11.5 11.5l1.1 1.1M3.4 12.6l1.1-1.1M11.5 4.5l1.1-1.1"/></svg>
+  </button>
+  <div class="pop" id="pop">
+    <div>
+      <h4 id="hMethod">Метод расчёта</h4>
+      <div class="seg" id="methodSeg"><button data-m="wcag" class="on">WCAG 2.x</button><button data-m="apca">APCA</button></div>
+      <div class="note" id="methodNote"></div>
+    </div>
+    <label class="switch"><input type="checkbox" id="highlight"> <span><span id="hlTitle">Подсвечивать ошибки на макете</span><span class="note" id="hlNote" style="display:block">Рисует рамки на странице, они удаляются при закрытии</span></span></label>
+  </div>
+</div>
+
+<section class="summary" id="summary">
+  <div class="grow"><div class="sum-title" id="sumTitle"></div><div class="sum-sub" id="sumSub"></div></div>
+  <button class="btn sm" id="swapBtn" style="display:none" title="Поменять местами текст и фон">⇄ Поменять</button>
+  <button class="btn primary sm" id="fixAll" style="display:none"></button>
+</section>
+
+<div class="filters" id="filters">
+  <button class="tab on" data-f="all"><span id="tAll">Все</span><i id="cAll"></i></button>
+  <button class="tab" data-f="bad"><span id="tBad">Ошибки</span><i id="cBad"></i></button>
+  <span class="grow"></span>
+  <button class="btn ghost icon" id="scan" title="Проверить заново" aria-label="Проверить заново">
+    <svg viewBox="0 0 16 16"><path d="M13.5 8a5.5 5.5 0 1 1-1.7-4"/><path d="M13.5 2.5v3h-3"/></svg>
+  </button>
+</div>
+
+<div id="list"></div>
+
+<section id="sheet" aria-label="Редактор цвета">
+  <div class="sheet-head">
+    <div class="grow t" id="edTitle"></div>
+    <button class="btn ghost icon" id="close" title="Закрыть" aria-label="Закрыть">
+      <svg viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+    </button>
+  </div>
+  <div id="pv"><span class="aa">Aa</span><span class="tx" id="pvText"></span>
+    <div class="score"><b id="ratio"></b><span class="pill big-pill" id="pStatus"></span></div></div>
+
+  <div class="field" id="fgField">
+    <label id="fgLabel">Цвет текста</label>
+    <div class="frow"><input type="color" id="fgPick"><input type="text" id="fgHex" maxlength="7" spellcheck="false" aria-label="Цвет текста, hex"><input type="range" id="fgL" min="0" max="100" step="1" aria-label="Светлота текста"><span class="lv" id="fgLv"></span></div>
+  </div>
+  <div class="field" id="bgField">
+    <label id="bgLabel">Цвет фона</label>
+    <div class="frow"><input type="color" id="bgPick"><input type="text" id="bgHex" maxlength="7" spellcheck="false" aria-label="Цвет фона, hex"><input type="range" id="bgL" min="0" max="100" step="1" aria-label="Светлота фона"><span class="lv" id="bgLv"></span></div>
+  </div>
+
+  <div class="fix"><span id="fitLabel">Подобрать</span><button class="btn" id="fitAA"></button><button class="btn" id="fitAAA"></button></div>
+  <div class="chips" id="modes"></div>
+  <div class="hint" id="hint"></div>
+
+  <details id="tokDetails">
+    <summary id="tokSummary">Токены и переменные</summary>
+    <div class="dbody">
+      <div class="note" id="tokNote" style="margin:0">Ближайшие токены, которые проходят проверку на этом фоне:</div>
+      <div class="chips" id="tokens"></div>
+      <button class="btn" id="applyVar" title="Изменить саму переменную: цвет сменится везде, где она используется">Изменить в переменной</button>
+    </div>
+  </details>
+
+  <div class="foot"><button class="btn" id="reset">Сбросить</button><span class="grow"></span><button class="btn primary" id="apply">Применить</button></div>
+</section>
+
+<div id="bulkbar">
+  <div class="foot"><div class="grow t" id="bulkTitle"></div><select id="bulkLevel" aria-label="Целевой уровень"></select></div>
+  <label class="switch"><input type="checkbox" id="skipBound" checked> <span id="skipText">Пропускать слои, привязанные к токенам</span></label>
+  <div class="foot"><button class="btn" id="bulkCancel">Отмена</button><span class="grow"></span><button class="btn primary" id="bulkApply"></button></div>
+</div>
+
+<script>
+/* ---------- language: Russian for ru locales, English otherwise ---------- */
+const LANG = (navigator.language || 'en').toLowerCase().startsWith('ru') ? 'ru' : 'en'
+const t = (ru, en) => (LANG === 'ru' ? ru : en)
+if (LANG === 'en') {
+  document.documentElement.lang = 'en'
+  const EN = {
+    mLayers: ['Layers'], mPair: ['Pair of layers'], hMethod: ['Calculation method'], hlTitle: ['Highlight issues on canvas'],
+    hlNote: ['Draws outlines on the page; removed when the plugin closes'], swapBtn: ['⇄ Swap', 'Swap text and background'],
+    tAll: ['All'], tBad: ['Issues'], bgLabel: ['Background color'], fitLabel: ['Fit'], tokSummary: ['Tokens and variables'],
+    tokNote: ['Nearest tokens that pass on this background:'], applyVar: ['Edit the variable', 'Change the variable itself: the color changes everywhere it is used'],
+    reset: ['Reset'], apply: ['Apply'], bulkCancel: ['Cancel'], skipText: ['Skip layers bound to tokens'],
+    gear: [null, 'Settings'], scan: [null, 'Rescan'], close: [null, 'Close'],
+  }
+  for (const [id, [text, title]] of Object.entries(EN)) {
+    const el = document.getElementById(id)
+    if (!el) continue
+    if (text) el.textContent = text
+    if (title) { el.title = title; if (el.tagName === 'BUTTON' && !text) el.setAttribute('aria-label', title) }
+  }
+  const ARIA = { modeSeg: 'Check mode', sheet: 'Color editor', fgHex: 'Text color, hex', bgHex: 'Background color, hex', fgL: 'Text lightness', bgL: 'Background lightness', bulkLevel: 'Target level' }
+  for (const [id, label] of Object.entries(ARIA)) document.getElementById(id).setAttribute('aria-label', label)
+}
+
+/* ---------- colour maths ---------- */
+const hexToRgb = (h) => { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255] }
+const rgbToHex = (r, g, b) => '#' + [r, g, b].map((v) => Math.round(v).toString(16).padStart(2, '0')).join('').toUpperCase()
+const normHex = (v) => {
+  v = v.trim().replace(/^#?/, '#')
+  if (/^#[0-9a-f]{3}$/i.test(v)) v = '#' + [...v.slice(1)].map((c) => c + c).join('')
+  return /^#[0-9a-f]{6}$/i.test(v) ? v.toUpperCase() : null
+}
+function rgbToHsl(r, g, b) {
+  r /= 255; g /= 255; b /= 255
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, d = max - min
+  let h = 0, s = 0
+  if (d) {
+    s = d / (1 - Math.abs(2 * l - 1))
+    h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4
+    h *= 60; if (h < 0) h += 360
+  }
+  return { h, s: s * 100, l: l * 100 }
+}
+function hslToHex(h, s, l) {
+  s /= 100; l /= 100
+  const k = (n) => (n + h / 30) % 12, a = s * Math.min(l, 1 - l)
+  const f = (n) => 255 * (l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1))))
+  return rgbToHex(f(0), f(8), f(4))
+}
+const lin = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4) }
+const lum = ([r, g, b]) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+const hsl = (hex) => rgbToHsl(...hexToRgb(hex))
+const mixed = (fgHex, alpha, bgHex) => {
+  const bg = hexToRgb(bgHex), top = hexToRgb(fgHex)
+  return { bg, fg: top.map((v, i) => v * alpha + bg[i] * (1 - alpha)) }
+}
+
+// APCA 0.0.98G-4g (SAPC). Positive = dark text on light, negative = light on dark.
+const apcaY = ([r, g, b]) => {
+  const f = (v) => Math.pow(v / 255, 2.4)
+  const y = 0.2126729 * f(r) + 0.7151522 * f(g) + 0.072175 * f(b)
+  return y < 0.022 ? y + Math.pow(0.022 - y, 1.414) : y
+}
+function apcaLc(txt, bg) {
+  const yt = apcaY(txt), yb = apcaY(bg)
+  if (Math.abs(yb - yt) < 0.0005) return 0
+  if (yb > yt) { const s = (Math.pow(yb, 0.56) - Math.pow(yt, 0.57)) * 1.14; return s < 0.1 ? 0 : (s - 0.027) * 100 }
+  const s = (Math.pow(yb, 0.65) - Math.pow(yt, 0.62)) * 1.14
+  return s > -0.1 ? 0 : (s + 0.027) * 100
+}
+
+/* ---------- scoring (method-aware) ---------- */
+const apca = () => cfg.method === 'apca'
+function score(fgHex, alpha, bgHex) {
+  const { fg, bg } = mixed(fgHex, alpha, bgHex)
+  if (apca()) return Math.abs(apcaLc(fg, bg))
+  const a = lum(fg), b = lum(bg)
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
+}
+const floor2 = (n) => (Math.floor(n * 100) / 100).toFixed(2)
+const fmt = (v) => (apca() ? 'Lc ' + Math.floor(v) : floor2(v) + ':1')
+const names = () => (apca() ? { min: t('Мин', 'Min'), pref: t('Рек', 'Pref') } : { min: 'AA', pref: 'AAA' })
+
+// Minimum / preferred score for an element. `pref` is null where undefined.
+// APCA: body text 75 / 90, large text 60 / 75, non-text 45 (APCA guidance, simplified).
+function limits(r) {
+  if (apca()) {
+    if (r.kind === 'icon') return { min: 45, pref: null }
+    return r.large ? { min: 60, pref: 75 } : { min: 75, pref: 90 }
+  }
+  if (r.kind === 'icon') return { min: 3, pref: null }
+  return r.large ? { min: 3, pref: 4.5 } : { min: 4.5, pref: 7 }
+}
+const now = (r) => score(r.fg, r.fgAlpha, r.bg)
+const failsMin = (r) => r.ratio !== null && now(r) < limits(r).min
+const failsPref = (r) => { const l = limits(r); return r.ratio !== null && l.pref !== null && now(r) < l.pref }
+const modeScore = (r, m) => score(m.fg, r.fgAlpha, m.bg)
+const failsModes = (r) => !!r.modes && r.modes.some((m) => modeScore(r, m) < limits(r).min)
+const isBad = (r) => failsMin(r) || failsModes(r)
+
+// Nearest lightness of the foreground (hue and saturation kept) that reaches `min`.
+function fitColor(fgHex, alpha, bgHex, min) {
+  const h = hsl(fgHex)
+  for (let d = 0; d <= 100; d += 0.25) {
+    for (const l of [h.l + d, h.l - d]) {
+      if (l < 0 || l > 100) continue
+      const hex = hslToHex(h.h, h.s, l)
+      if (score(hex, alpha, bgHex) >= min) return { hex, l, h: h.h, s: h.s }
+    }
+  }
+  return null
+}
+
+/* ---------- state ---------- */
+const $ = (id) => document.getElementById(id)
+const post = (m) => parent.postMessage({ pluginMessage: m }, '*')
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+const plural = (n, one, few, many) => { const m = n % 100, d = n % 10; return m > 10 && m < 20 ? many : d === 1 ? one : d > 1 && d < 5 ? few : many }
+
+let results = []
+let scope = 'page'
+let failed = 0
+let selCount = 0
+let selId = null
+// Draft colours being edited; h/s are kept so the hue survives L = 0 / 100.
+let draft = null
+let cfg = { method: 'wcag', pair: false, swap: false, highlight: false }
+let bulk = null
+let tokens = []
+let filter = 'all'
+let scanning = null
+
+/* ---------- list ---------- */
+const current = () => results.find((r) => r.id === selId)
+
+function statusOf(r) {
+  if (r.ratio === null) return { cls: '', text: '?' }
+  const n = names(), l = limits(r), v = now(r)
+  if (v < l.min) return { cls: 'fail', text: t('Ошибка', 'Fail') }
+  return l.pref !== null && v >= l.pref ? { cls: 'aaa', text: n.pref } : { cls: 'aa', text: n.min }
+}
+const pill = (st) => `<span class="pill ${st.cls}">${st.text}</span>`
+const elementWord = (r) => (r.kind === 'icon' ? t('Иконка или фигура', 'Icon or shape') : t(`Текст ${Math.round(r.fontSize)} px${r.large ? ', крупный' : ''}`, `Text ${Math.round(r.fontSize)} px${r.large ? ', large' : ''}`))
+
+function emptyState(icon, title, text) {
+  return `<div class="empty"><svg viewBox="0 0 24 24">${icon}</svg><b>${title}</b>${text}</div>`
+}
+const ICON_SEARCH = '<circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/>'
+const ICON_CHECK = '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 9.5"/>'
+const ICON_PAIR = '<rect x="3" y="3" width="11" height="11" rx="2"/><rect x="10" y="10" width="11" height="11" rx="2"/>'
+
+function renderSummary() {
+  const bad = results.filter(failsMin)
+  const pair = scope === 'pair'
+  $('filters').style.display = pair ? 'none' : ''
+  $('swapBtn').style.display = pair && results.length ? '' : 'none'
+  $('fixAll').style.display = !pair && bad.length && !bulk ? '' : 'none'
+  $('fixAll').textContent = t(`Исправить все (${bad.length})`, `Fix all (${bad.length})`)
+  const title = $('sumTitle')
+  if (scanning) {
+    title.className = 'sum-title'; title.textContent = t('Проверка…', 'Scanning…')
+    $('sumSub').textContent = t(`${scanning.done} из ${scanning.total}`, `${scanning.done} of ${scanning.total}`)
+    return
+  }
+  if (pair) {
+    const r = results[0]
+    title.className = 'sum-title'
+    if (r) {
+      title.innerHTML = `<b>${esc(r.text || r.name)}</b>`
+      $('sumSub').textContent = t(`на фоне «${r.pairBg || '—'}»`, `on “${r.pairBg || '—'}”`)
+    } else { title.textContent = t('Выберите два слоя', 'Select two layers'); $('sumSub').textContent = t('Текст или иконка и слой с фоном', 'A text or icon layer and its background layer') }
+    return
+  }
+  title.className = 'sum-title ' + (bad.length ? 'bad' : 'ok')
+  title.textContent = !results.length ? t('Нет данных', 'No data') : bad.length ? (LANG === 'ru' ? `${bad.length} ${plural(bad.length, 'ошибка', 'ошибки', 'ошибок')}` : `${bad.length} ${bad.length === 1 ? 'issue' : 'issues'}`) : t('Всё в порядке', 'All good')
+  $('sumSub').textContent = `${scope === 'selection' ? t('Выделение', 'Selection') : t('Вся страница', 'Whole page')} · ${t('проверено', 'checked')} ${results.length}${failed ? ` · ${t('пропущено', 'skipped')} ${failed}` : ''}`
+  $('cAll').textContent = results.length
+  $('cBad').textContent = bad.length
+  for (const t of document.querySelectorAll('.tab')) t.classList.toggle('on', t.dataset.f === filter)
+}
+
+function renderList() {
+  if (bulk) return renderBulk()
+  renderSummary()
+  if (scanning) return
+  const rows = results.filter((r) => filter === 'all' || r.ratio === null || isBad(r))
+  if (!rows.length) {
+    $('list').innerHTML = scope === 'pair'
+      ? emptyState(ICON_PAIR, selCount === 2 ? t('Не удалось проверить пару', 'Could not check this pair') : t('Выделите два слоя', 'Select two layers'), t('Например, текст и подложку под ним. Плагин сам поймёт, где текст, а где фон.', 'For example, a text and the shape behind it. The plugin works out which one is the text.'))
+      : results.length
+        ? emptyState(ICON_CHECK, t('Ошибок нет', 'No issues'), t('Все проверенные элементы проходят контраст.', 'Every checked element passes the contrast requirements.'))
+        : emptyState(ICON_SEARCH, t('Нечего проверять', 'Nothing to check'), t('Выделите рамку или слой с текстом и иконками. Без выделения проверяется вся страница.', 'Select a frame or a layer with text and icons. With nothing selected, the whole page is checked.'))
+    return
+  }
+  $('list').innerHTML = rows.map((r) => {
+    const na = r.ratio === null
+    const flag = !na && failsModes(r) ? `<span class="mflag" title="${t('Не проходит в другом режиме переменных', 'Fails in another variable mode')}"></span>` : ''
+    return `<div class="item${r.id === selId ? ' sel' : ''}" tabindex="0" role="button" data-id="${esc(r.id)}">
+      <div class="sw" ${na ? '' : `style="background:${r.bg};color:${r.fg}"`}>${r.kind === 'icon' ? '◆' : 'Aa'}</div>
+      <div class="meta"><div class="t">${esc(r.text || r.name)}</div><div class="s">${na ? esc(r.note || t('Нужна ручная проверка', 'Needs a manual check')) : esc(elementWord(r))}</div></div>
+      ${flag}${na ? '' : `<span class="val">${fmt(now(r))}</span>`}${na ? '' : pill(statusOf(r))}
+    </div>`
+  }).join('')
+}
+
+/* ---------- editor ---------- */
+function openEditor(r) {
+  selId = r.id
+  tokens = []
+  $('tokDetails').open = false
+  if (r.ratio === null) { closeEditor(); return }
+  draft = { fg: r.fg, bg: r.bg, fgH: hsl(r.fg), bgH: hsl(r.bg), token: null }
+  $('edTitle').textContent = elementWord(r)
+  $('fgLabel').textContent = r.kind === 'icon' ? t('Цвет слоя', 'Layer color') : t('Цвет текста', 'Text color')
+  $('sheet').classList.toggle('open', !bulk)
+  syncEditor()
+  renderList()
+}
+function closeEditor() {
+  selId = null
+  $('sheet').classList.remove('open')
+  renderList()
+}
+
+function setTrack(el, h) {
+  const c = (l) => `hsl(${h.h} ${h.s}% ${l}%)`
+  el.style.background = `linear-gradient(90deg, ${c(0)}, ${c(50)}, ${c(100)})`
+}
+
+function renderModes(r) {
+  const el = $('modes')
+  if (!r.modes || !r.modes.length) { el.style.display = 'none'; return }
+  const min = limits(r).min
+  el.style.display = ''
+  el.innerHTML = r.modes.map((m) => {
+    const v = modeScore(r, m)
+    return `<span class="chip${v < min ? ' fail' : ''}" title="${esc(m.fg + ' / ' + m.bg)}"><i style="background:${m.bg}"></i><span>${esc(m.label)} · ${fmt(v)} ${v < min ? '✕' : '✓'}</span></span>`
+  }).join('')
+}
+
+function renderTokens(r) {
+  const el = $('tokens')
+  if (!$('tokDetails').open) return
+  const min = limits(r).min
+  const [dr, dg, db] = hexToRgb(draft.fg)
+  const dist = (hex) => { const [a, b, c] = hexToRgb(hex); return (a - dr) ** 2 + (b - dg) ** 2 + (c - db) ** 2 }
+  const seen = new Set()
+  const ok = tokens
+    .filter((t) => score(t.hex, r.fgAlpha, draft.bg) >= min)
+    .sort((a, b) => dist(a.hex) - dist(b.hex))
+    .filter((t) => (seen.has(t.id) ? false : seen.add(t.id)))
+    .slice(0, 8)
+  el.innerHTML = ok.length
+    ? ok.map((t) => `<button class="chip" data-tok="${esc(t.id)}" title="${esc(t.name + ' ' + t.hex)}"><i style="background:${t.hex}"></i><span>${esc(t.name)} · ${fmt(score(t.hex, r.fgAlpha, draft.bg))}</span></button>`).join('')
+    : `<span class="muted">${tokens.length ? t('Подходящих токенов нет', 'No matching tokens') : t('Локальных цветовых переменных не найдено', 'No local color variables found')}</span>`
+}
+
+function syncEditor() {
+  const r = current()
+  if (!r || !draft) return
+  for (const k of ['fg', 'bg']) {
+    const h = draft[k + 'H']
+    $(k + 'Pick').value = draft[k].toLowerCase()
+    if (document.activeElement !== $(k + 'Hex')) { $(k + 'Hex').value = draft[k]; $(k + 'Hex').classList.remove('bad') }
+    $(k + 'L').value = Math.round(h.l)
+    $(k + 'Lv').textContent = Math.round(h.l)
+    setTrack($(k + 'L'), h)
+  }
+  const lim = limits(r), n = names()
+  const val = score(draft.fg, r.fgAlpha, draft.bg)
+  const eff = mixed(draft.fg, r.fgAlpha, draft.bg).fg
+  $('pv').style.background = draft.bg
+  $('pv').style.color = rgbToHex(...eff)
+  $('pvText').textContent = r.text || r.name
+  $('pvText').style.fontWeight = r.large ? 700 : 400
+  $('ratio').textContent = fmt(val)
+  const st = val < lim.min ? { cls: 'fail', text: t('Ошибка', 'Fail') } : lim.pref !== null && val >= lim.pref ? { cls: 'aaa', text: n.pref } : { cls: 'aa', text: n.min }
+  $('pStatus').className = 'pill big-pill ' + st.cls
+  $('pStatus').textContent = st.text
+  $('fitAA').textContent = '→ ' + n.min
+  $('fitAAA').textContent = '→ ' + n.pref
+  $('fitAA').title = t(`Подобрать цвет ближайшей светлоты до уровня «${n.min}»`, `Find the nearest lightness that reaches “${n.min}”`)
+  $('fitAAA').title = t(`Подобрать цвет ближайшей светлоты до уровня «${n.pref}»`, `Find the nearest lightness that reaches “${n.pref}”`)
+  $('fitAAA').disabled = lim.pref === null
+  $('bgField').classList.toggle('off', !r.bgEditable)
+  const dirty = draft.fg !== r.fg || draft.bg !== r.bg
+  $('apply').disabled = !dirty
+  $('reset').disabled = !dirty
+  $('applyVar').style.display = r.fgVar ? '' : 'none'
+  $('applyVar').disabled = draft.fg === r.fg
+  const warn = []
+  if (r.note) warn.push(r.note + '.')
+  if (!r.bgEditable) warn.push(t('Фон составной, градиентный или полупрозрачный: можно менять только цвет переднего плана.', 'The backdrop is composite, a gradient or translucent: only the foreground color can be edited.'))
+  if (!draft.token && ((draft.fg !== r.fg && r.fgBound) || (draft.bg !== r.bg && r.bgBound))) warn.push(t('Цвет привязан к токену или стилю: после применения привязка снимется.', 'The color is bound to a token or style: applying will detach it.'))
+  if (draft.token) warn.push(t('Будет привязан выбранный токен.', 'The selected token will be bound.'))
+  $('hint').textContent = warn.join(' ')
+  renderModes(r)
+  renderTokens(r)
+}
+
+function setColor(k, hex) {
+  draft[k] = hex; draft[k + 'H'] = hsl(hex)
+  if (k === 'fg') draft.token = null
+  syncEditor()
+}
+function setLightness(k, l) {
+  const h = draft[k + 'H']
+  draft[k] = hslToHex(h.h, h.s, l)
+  draft[k + 'H'] = { h: h.h, s: h.s, l }
+  if (k === 'fg') draft.token = null
+  syncEditor()
+}
+for (const k of ['fg', 'bg']) {
+  $(k + 'Pick').oninput = (e) => setColor(k, e.target.value.toUpperCase())
+  $(k + 'L').oninput = (e) => setLightness(k, +e.target.value)
+  $(k + 'Hex').oninput = (e) => {
+    const hex = normHex(e.target.value)
+    e.target.classList.toggle('bad', !hex)
+    if (hex) setColor(k, hex)
+  }
+  $(k + 'Hex').onblur = syncEditor
+}
+
+function fit(min) {
+  const r = current()
+  const best = fitColor(draft.fg, r.fgAlpha, draft.bg, min)
+  if (!best) { $('hint').textContent = t('Нужный контраст недостижим на этом фоне: измените фон.', 'This contrast is unreachable on this background: change the background.'); return }
+  draft.fg = best.hex
+  draft.fgH = { h: best.h, s: best.s, l: best.l }
+  draft.token = null
+  syncEditor()
+}
+$('fitAA').onclick = () => fit(limits(current()).min)
+$('fitAAA').onclick = () => { const m = limits(current()).pref; if (m !== null) fit(m) }
+$('reset').onclick = () => openEditor(current())
+$('close').onclick = closeEditor
+$('apply').onclick = () => {
+  const r = current()
+  $('apply').disabled = true
+  post({ type: 'apply', id: r.id, fg: draft.fg !== r.fg ? draft.fg : undefined, bg: draft.bg !== r.bg ? draft.bg : undefined, token: draft.token || undefined })
+}
+$('applyVar').onclick = () => { $('applyVar').disabled = true; post({ type: 'applyVariable', id: current().id, fg: draft.fg }) }
+$('tokDetails').ontoggle = () => {
+  if ($('tokDetails').open && !tokens.length) post({ type: 'tokens', id: selId })
+  syncEditor()
+}
+$('tokens').onclick = (e) => {
+  const el = e.target.closest('[data-tok]')
+  const t = el && tokens.find((x) => x.id === el.dataset.tok)
+  if (!t) return
+  setColor('fg', t.hex)
+  draft.token = t.id
+  syncEditor()
+}
+
+/* ---------- bulk fix ---------- */
+function planBulk() {
+  bulk.items = results.filter((r) => r.ratio !== null).map((r) => {
+    const lim = limits(r)
+    const min = bulk.level === 'pref' && lim.pref !== null ? lim.pref : lim.min
+    return { r, min }
+  }).filter((i) => now(i.r) < i.min).map((i) => {
+    const item = { r: i.r, skip: null, fg: null, after: null }
+    if (i.r.fgBound && $('skipBound').checked) item.skip = t('привязан к токену', 'bound to a token')
+    else {
+      const best = fitColor(i.r.fg, i.r.fgAlpha, i.r.bg, i.min)
+      if (!best) item.skip = t('недостижимо', 'unreachable')
+      else { item.fg = best.hex; item.after = score(best.hex, i.r.fgAlpha, i.r.bg) }
+    }
+    return item
+  })
+}
+function openBulk() {
+  const n = names()
+  $('bulkLevel').innerHTML = `<option value="min">${t('Довести до', 'Raise to')} ${n.min}</option><option value="pref">${t('Довести до', 'Raise to')} ${n.pref}</option>`
+  bulk = { level: 'min', items: [] }
+  planBulk()
+  $('sheet').classList.remove('open')
+  $('bulkbar').classList.add('open')
+  renderList()
+}
+function closeBulk() {
+  bulk = null
+  $('bulkbar').classList.remove('open')
+  if (current()) $('sheet').classList.add('open')
+  renderList()
+}
+function renderBulk() {
+  const ok = bulk.items.filter((i) => !i.skip)
+  renderSummary()
+  $('sumTitle').className = 'sum-title'
+  $('sumTitle').textContent = t('Предпросмотр исправлений', 'Fix preview')
+  $('sumSub').textContent = t('Изменится только цвет переднего плана', 'Only the foreground color changes')
+  $('fixAll').style.display = 'none'
+  $('bulkTitle').textContent = t(`Будет исправлено ${ok.length} из ${bulk.items.length}`, `${ok.length} of ${bulk.items.length} will be fixed`)
+  $('bulkApply').disabled = !ok.length
+  $('bulkApply').textContent = t(`Применить (${ok.length})`, `Apply (${ok.length})`)
+  $('list').innerHTML = bulk.items.length ? bulk.items.map((i) => {
+    const r = i.r
+    return `<div class="item${i.skip ? ' skip' : ''}">
+      <div class="sw" style="background:${r.bg};color:${i.fg || r.fg}">${r.kind === 'icon' ? '◆' : 'Aa'}</div>
+      <div class="meta"><div class="t">${esc(r.text || r.name)}</div><div class="s">${i.skip ? t('Пропущен: ', 'Skipped: ') + esc(i.skip) : fmt(now(r)) + ' → ' + fmt(i.after)}</div></div>
+      ${i.skip ? '' : `<span class="pill aa">${i.fg}</span>`}
+    </div>`
+  }).join('') : emptyState(ICON_CHECK, t('Исправлять нечего', 'Nothing to fix'), '')
+}
+$('fixAll').onclick = openBulk
+$('bulkCancel').onclick = closeBulk
+$('bulkLevel').onchange = (e) => { bulk.level = e.target.value; planBulk(); renderList() }
+$('skipBound').onchange = () => { planBulk(); renderList() }
+$('bulkApply').onclick = () => {
+  const items = bulk.items.filter((i) => !i.skip).map((i) => ({ id: i.r.id, fg: i.fg }))
+  $('bulkApply').disabled = true
+  post({ type: 'applyMany', items })
+  bulk = null
+  $('bulkbar').classList.remove('open')
+}
+
+/* ---------- settings & canvas markers ---------- */
+function saveCfg() { post({ type: 'settings', cfg }) }
+function syncMarkers() {
+  post({ type: 'markers', ids: cfg.highlight && scope !== 'pair' ? results.filter(isBad).map((r) => r.id) : [] })
+}
+function syncControls() {
+  $('mLayers').classList.toggle('on', !cfg.pair)
+  $('mPair').classList.toggle('on', cfg.pair)
+  for (const b of $('methodSeg').children) b.classList.toggle('on', b.dataset.m === cfg.method)
+  $('methodNote').textContent = cfg.method === 'apca'
+    ? t('Новая модель контраста (Lc) из черновика WCAG 3. Пороги: текст 75/90, крупный 60/75, иконки 45.', 'The newer contrast model (Lc) from the WCAG 3 draft. Thresholds: body text 75/90, large text 60/75, icons 45.')
+    : t('Классические соотношения: AA 4.5:1 (крупный 3:1), AAA 7:1 (крупный 4.5:1), иконки 3:1.', 'Classic ratios: AA 4.5:1 (large 3:1), AAA 7:1 (large 4.5:1), icons 3:1.')
+  $('highlight').checked = cfg.highlight
+}
+function refresh() {
+  if (bulk) { planBulk(); renderList(); return }
+  const r = current()
+  if (r) openEditor(r); else renderList()
+  syncMarkers()
+}
+const setPop = (open) => { $('pop').classList.toggle('open', open); $('gear').setAttribute('aria-expanded', String(open)) }
+$('gear').onclick = (e) => { e.stopPropagation(); setPop(!$('pop').classList.contains('open')) }
+document.addEventListener('click', (e) => { if (!e.target.closest('#pop')) setPop(false) })
+$('methodSeg').onclick = (e) => {
+  const m = e.target.dataset && e.target.dataset.m
+  if (!m || m === cfg.method) return
+  cfg.method = m; saveCfg(); syncControls(); refresh()
+}
+$('mLayers').onclick = () => { if (!cfg.pair) return; cfg.pair = false; selId = null; $('sheet').classList.remove('open'); saveCfg(); syncControls() }
+$('mPair').onclick = () => { if (cfg.pair) return; cfg.pair = true; selId = null; $('sheet').classList.remove('open'); saveCfg(); syncControls() }
+$('swapBtn').onclick = () => { cfg.swap = !cfg.swap; saveCfg() }
+$('highlight').onchange = (e) => { cfg.highlight = e.target.checked; saveCfg(); syncMarkers() }
+
+/* ---------- wiring ---------- */
+$('scan').onclick = () => { $('scan').disabled = true; post({ type: 'scan' }) }
+for (const t of document.querySelectorAll('.tab')) t.onclick = () => { filter = t.dataset.f; renderList() }
+$('list').onclick = (e) => {
+  if (bulk) return
+  const el = e.target.closest('.item')
+  const r = el && results.find((x) => x.id === el.dataset.id)
+  if (r) { openEditor(r); post({ type: 'focus', id: r.id }) }
+}
+$('list').onkeydown = (e) => {
+  if (bulk) return
+  const el = e.target.closest('.item')
+  if (!el) return
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click() }
+  else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault()
+    const sib = e.key === 'ArrowDown' ? el.nextElementSibling : el.previousElementSibling
+    if (sib) sib.focus()
+  }
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return
+  if ($('pop').classList.contains('open')) setPop(false)
+  else if (bulk) closeBulk()
+  else if (selId) closeEditor()
+})
+
+onmessage = (e) => {
+  const m = e.data.pluginMessage
+  if (!m) return
+  if (m.type === 'init') {
+    cfg = { ...cfg, ...m.cfg }
+    syncControls()
+  } else if (m.type === 'results') {
+    results = m.results; scope = m.scope; failed = m.failed; selCount = m.selected; scanning = null
+    $('scan').disabled = false
+    if (bulk) { bulk = null; $('bulkbar').classList.remove('open') }
+    // A fresh selection opens its first element; a manual rescan keeps the current one.
+    const keep = m.autoOpen ? null : results.find((r) => r.id === selId)
+    const target = keep || (m.autoOpen ? results[0] : null)
+    if (target) openEditor(target); else closeEditor()
+    syncMarkers()
+  } else if (m.type === 'updated') {
+    const i = results.findIndex((r) => r.id === m.result.id)
+    if (i >= 0) results[i] = m.result
+    openEditor(m.result)
+    syncMarkers()
+  } else if (m.type === 'tokens') {
+    if (m.id === selId) { tokens = m.tokens; syncEditor() }
+  } else if (m.type === 'progress') {
+    scanning = { done: m.done, total: m.total }
+    renderSummary()
+  }
+}
+syncControls()
+post({ type: 'ready', lang: LANG })
+</script>
+</body>
+</html>

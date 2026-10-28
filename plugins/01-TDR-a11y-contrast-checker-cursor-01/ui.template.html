@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    :root {
+      --bg: #f7f5f2;
+      --surface: #ffffff;
+      --ink: #1a1a1a;
+      --muted: #6b6560;
+      --line: #e4dfd8;
+      --accent: #0b6e4f;
+      --accent-soft: #e3f2ec;
+      --fail: #9b1d1d;
+      --fail-soft: #f8e8e8;
+      --pass: #0b6e4f;
+      --pass-soft: #e3f2ec;
+      --warn: #8a5a00;
+      --warn-soft: #fff3d6;
+      --radius: 10px;
+      --font: "IBM Plex Sans", "Segoe UI", "Helvetica Neue", sans-serif;
+      --mono: "IBM Plex Mono", "SF Mono", "Consolas", monospace;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 16px;
+      font-family: var(--font);
+      font-size: 12px;
+      line-height: 1.4;
+      color: var(--ink);
+      background:
+        radial-gradient(120% 80% at 100% 0%, #efe8de 0%, transparent 55%),
+        radial-gradient(90% 60% at 0% 100%, #e8efe9 0%, transparent 50%),
+        var(--bg);
+      min-height: 100vh;
+    }
+
+    header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 650;
+      letter-spacing: -0.02em;
+    }
+
+    .badge {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: var(--accent-soft);
+      padding: 3px 7px;
+      border-radius: 999px;
+    }
+
+    .hint {
+      color: var(--muted);
+      margin: 0 0 10px;
+      min-height: 2.8em;
+    }
+
+    .follow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 14px;
+      color: var(--muted);
+      user-select: none;
+    }
+
+    .follow input { accent-color: var(--accent); }
+
+    .colors {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 8px;
+      align-items: start;
+      margin-bottom: 14px;
+    }
+
+    .swatch-field label {
+      display: block;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .swatch-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 8px;
+    }
+
+    .swatch-row input[type="color"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 36px;
+      height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0;
+      background: none;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .swatch-row input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+    .swatch-row input[type="color"]::-webkit-color-swatch {
+      border: none;
+      border-radius: 7px;
+    }
+
+    .swatch-row input[type="text"] {
+      width: 100%;
+      border: none;
+      outline: none;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--ink);
+      background: transparent;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    .meta {
+      margin-top: 6px;
+      font-size: 10px;
+      color: var(--muted);
+      min-height: 1.3em;
+      word-break: break-word;
+    }
+
+    .meta[data-kind="variable"] { color: var(--accent); }
+    .meta[data-kind="style"] { color: var(--accent); }
+    .meta[data-kind="raw"] { color: var(--warn); }
+
+    .swap {
+      width: 32px;
+      height: 32px;
+      margin-top: 22px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--ink);
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .swap:hover { background: var(--accent-soft); border-color: #b7d7c8; }
+
+    .preview {
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      overflow: hidden;
+      margin-bottom: 14px;
+      background: var(--surface);
+    }
+
+    .preview-sample {
+      padding: 20px 16px;
+      text-align: center;
+      transition: background 120ms ease, color 120ms ease;
+    }
+
+    .preview-sample .large {
+      margin: 0 0 6px;
+      font-size: 22px;
+      font-weight: 650;
+      letter-spacing: -0.02em;
+    }
+
+    .preview-sample .normal {
+      margin: 0;
+      font-size: 13px;
+    }
+
+    .ratio-block {
+      padding: 12px 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    .ratio-value {
+      font-family: var(--mono);
+      font-size: 28px;
+      font-weight: 650;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+
+    .ratio-label {
+      color: var(--muted);
+      font-size: 11px;
+      margin-top: 4px;
+    }
+
+    .checks {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .check {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: var(--surface);
+    }
+
+    .check-title { font-weight: 600; font-size: 12px; }
+    .check-meta { color: var(--muted); font-size: 11px; margin-top: 2px; }
+
+    .status {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 4px 8px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .status.pass { color: var(--pass); background: var(--pass-soft); }
+    .status.fail { color: var(--fail); background: var(--fail-soft); }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    button.btn {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--surface);
+      color: var(--ink);
+    }
+
+    button.btn:hover { background: #f0ece6; }
+
+    button.btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    button.btn.primary:hover { filter: brightness(1.05); }
+
+    .error {
+      color: var(--fail);
+      margin: 0 0 10px;
+      min-height: 1.2em;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Contrast Checker</h1>
+    <span class="badge">WCAG 2.2</span>
+  </header>
+
+  <p class="hint" id="hint">Select layers or pick colors manually.</p>
+  <label class="follow">
+    <input id="followSelection" type="checkbox" checked />
+    Follow selection
+  </label>
+  <p class="error" id="error" hidden></p>
+
+  <div class="colors">
+    <div class="swatch-field">
+      <label for="fgHex">Foreground</label>
+      <div class="swatch-row">
+        <input id="fgColor" type="color" value="#1A1A1A" aria-label="Foreground color picker" />
+        <input id="fgHex" type="text" value="#1A1A1A" maxlength="7" spellcheck="false" aria-label="Foreground hex" />
+      </div>
+      <div class="meta" id="fgMeta" data-kind="manual">Manual</div>
+    </div>
+
+    <button class="swap" id="swap" type="button" title="Swap colors" aria-label="Swap foreground and background">⇄</button>
+
+    <div class="swatch-field">
+      <label for="bgHex">Background</label>
+      <div class="swatch-row">
+        <input id="bgColor" type="color" value="#FFFFFF" aria-label="Background color picker" />
+        <input id="bgHex" type="text" value="#FFFFFF" maxlength="7" spellcheck="false" aria-label="Background hex" />
+      </div>
+      <div class="meta" id="bgMeta" data-kind="manual">Manual</div>
+    </div>
+  </div>
+
+  <div class="preview">
+    <div class="preview-sample" id="preview">
+      <p class="large">Large text 18pt+</p>
+      <p class="normal">Normal body text sample</p>
+    </div>
+    <div class="ratio-block">
+      <div class="ratio-value" id="ratio">21.00:1</div>
+      <div class="ratio-label">Contrast ratio</div>
+    </div>
+  </div>
+
+  <div class="checks" id="checks" aria-live="polite"></div>
+
+  <div class="actions">
+    <button class="btn" id="fromSelection" type="button">From selection</button>
+    <button class="btn primary" id="close" type="button">Close</button>
+  </div>
+
+  <script src="ui.js"></script>
+</body>
+</html>
