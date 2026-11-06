@@ -1,0 +1,79 @@
+.tds-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--tds-space-2);
+  margin: 0;
+  border: 1px solid transparent;
+  border-radius: var(--tds-radius-md);
+  font-family: inherit;
+  font-weight: var(--tds-font-weight-medium);
+  line-height: var(--tds-line-height-tight);
+  cursor: pointer;
+  transition:
+    background-color var(--tds-duration-fast) var(--tds-ease-standard),
+    border-color var(--tds-duration-fast) var(--tds-ease-standard),
+    color var(--tds-duration-fast) var(--tds-ease-standard);
+}
+
+.tds-button--sm {
+  min-height: 2rem;
+  padding: var(--tds-space-1) var(--tds-space-3);
+  font-size: var(--tds-font-size-sm);
+}
+
+.tds-button--md {
+  min-height: 2.5rem;
+  padding: var(--tds-space-2) var(--tds-space-4);
+  font-size: var(--tds-font-size-md);
+}
+
+.tds-button--primary:not(:disabled) {
+  /* fg-inverted flips with theme; mainOnDark/OnLight are static and break dark loud fill */
+  color: var(--fg-inverted);
+  background: var(--bg-lead-loud-enabled);
+}
+
+.tds-button--primary:hover:not(:disabled) {
+  background: var(--bg-lead-loud-hover);
+}
+
+.tds-button--primary:active:not(:disabled) {
+  background: var(--bg-lead-loud-active);
+}
+
+.tds-button--secondary:not(:disabled) {
+  color: var(--fg-main);
+  background: var(--bg-calm);
+  border-color: var(--br-grey-calm-enabled);
+}
+
+.tds-button--secondary:hover:not(:disabled) {
+  background: var(--bg-grey-calm-hover);
+}
+
+.tds-button--secondary:active:not(:disabled) {
+  background: var(--bg-grey-calm-active);
+}
+
+.tds-button--ghost:not(:disabled) {
+  color: var(--link-loud-enabled);
+  background: transparent;
+}
+
+.tds-button--ghost:hover:not(:disabled) {
+  color: var(--link-loud-hover);
+  background: var(--bg-lead-calm-enabled);
+}
+
+.tds-button--ghost:active:not(:disabled) {
+  color: var(--link-loud-active);
+  background: var(--bg-lead-calm-active);
+}
+
+.tds-button:disabled {
+  color: var(--fg-grey-loud-enabled);
+  background: var(--bg-disabled);
+  border-color: var(--br-disabled);
+  cursor: not-allowed;
+}

@@ -1,0 +1,402 @@
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #ffffff;
+    --fg: #111111;
+    --muted: #666666;
+    --border: #d9d9d9;
+    --accent: #111111;
+    --accent-fg: #ffffff;
+    --error: #b42318;
+    --error-bg: #fef3f2;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --sans: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #2c2c2c;
+      --fg: #f5f5f5;
+      --muted: #a3a3a3;
+      --border: #444444;
+      --accent: #f5f5f5;
+      --accent-fg: #111111;
+      --error: #f97066;
+      --error-bg: #3b1d1d;
+    }
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--fg);
+    font: 12px/1.4 var(--sans);
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 16px 16px;
+    min-height: 0;
+  }
+
+  h1 {
+    margin: 0;
+    flex: 0 0 auto;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .hint {
+    margin: 0;
+    flex: 0 0 auto;
+    color: var(--muted);
+  }
+
+  .field-label {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--muted);
+  }
+
+  .collections-wrap {
+    flex: 0 0 auto;
+  }
+
+  button,
+  textarea {
+    font: inherit;
+  }
+
+  .collection-list {
+    max-height: 112px;
+    overflow: auto;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px;
+  }
+
+  .collection-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .collection-item:hover {
+    background: color-mix(in srgb, var(--fg) 6%, transparent);
+  }
+
+  .collection-item input {
+    margin: 0;
+    flex: 0 0 auto;
+  }
+
+  .collection-item span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .preview-wrap {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    gap: 6px;
+    overflow: hidden;
+  }
+
+  textarea {
+    display: block;
+    width: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    resize: none;
+    overflow: auto;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 1.45;
+    white-space: pre;
+  }
+
+  .actions {
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  button {
+    height: 32px;
+    padding: 0 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--fg);
+    cursor: pointer;
+  }
+
+  button.primary {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--accent-fg);
+  }
+
+  button:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+
+  .status {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 16px;
+    color: var(--muted);
+  }
+
+  .status.error {
+    color: var(--error);
+  }
+
+  .status.ok {
+    color: var(--muted);
+  }
+
+  .error-box {
+    display: none;
+    flex: 0 0 auto;
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: var(--error-bg);
+    color: var(--error);
+  }
+
+  .error-box.visible {
+    display: block;
+  }
+</style>
+
+<h1>COLOR → CSS</h1>
+<p class="hint">Выберите одну или несколько коллекций (например _palette + semantic).</p>
+
+<div class="collections-wrap">
+  <span class="field-label" id="collections-label">Коллекции</span>
+  <div
+    id="collections"
+    class="collection-list"
+    role="group"
+    aria-labelledby="collections-label"
+  >
+    Загрузка…
+  </div>
+</div>
+
+<div id="error" class="error-box" role="alert"></div>
+
+<div class="preview-wrap">
+  <label class="field-label" for="css">CSS</label>
+  <textarea id="css" readonly placeholder="Отметьте коллекции и нажмите «Экспортировать»"></textarea>
+</div>
+
+<div class="actions">
+  <button id="export" class="primary" type="button" disabled>Экспортировать</button>
+  <button id="copy" type="button" disabled>Скопировать</button>
+  <button id="close" type="button">Закрыть</button>
+  <span id="status" class="status" aria-live="polite"></span>
+</div>
+
+<script>
+  const collectionsEl = document.getElementById('collections');
+  const cssArea = document.getElementById('css');
+  const exportButton = document.getElementById('export');
+  const copyButton = document.getElementById('copy');
+  const closeButton = document.getElementById('close');
+  const statusEl = document.getElementById('status');
+  const errorEl = document.getElementById('error');
+
+  function setError(message) {
+    if (!message) {
+      errorEl.textContent = '';
+      errorEl.classList.remove('visible');
+      return;
+    }
+    errorEl.textContent = message;
+    errorEl.classList.add('visible');
+  }
+
+  function setStatus(message, kind) {
+    statusEl.textContent = message || '';
+    statusEl.className = 'status' + (kind ? ' ' + kind : '');
+  }
+
+  function setCss(css) {
+    cssArea.value = css || '';
+    copyButton.disabled = !css;
+  }
+
+  function post(message) {
+    parent.postMessage({ pluginMessage: message }, '*');
+  }
+
+  function getSelectedCollectionIds() {
+    return Array.from(
+      collectionsEl.querySelectorAll('input[type="checkbox"]:checked')
+    ).map((input) => input.value);
+  }
+
+  function updateExportEnabled() {
+    exportButton.disabled = getSelectedCollectionIds().length === 0;
+  }
+
+  function copyViaExecCommand(text) {
+    const helper = document.createElement('textarea');
+    helper.value = text;
+    helper.setAttribute('readonly', '');
+    helper.style.position = 'fixed';
+    helper.style.top = '0';
+    helper.style.left = '0';
+    helper.style.width = '1px';
+    helper.style.height = '1px';
+    helper.style.padding = '0';
+    helper.style.border = 'none';
+    helper.style.outline = 'none';
+    helper.style.boxShadow = 'none';
+    helper.style.background = 'transparent';
+    helper.style.opacity = '0';
+    document.body.appendChild(helper);
+    helper.focus();
+    helper.select();
+    helper.setSelectionRange(0, text.length);
+    let ok = false;
+    try {
+      ok = document.execCommand('copy');
+    } catch (_err) {
+      ok = false;
+    }
+    document.body.removeChild(helper);
+    return ok;
+  }
+
+  async function copyText(text) {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (_err) {
+        // Figma plugin iframe often blocks Clipboard API — fall through.
+      }
+    }
+    return copyViaExecCommand(text);
+  }
+
+  function renderCollections(collections) {
+    collectionsEl.innerHTML = '';
+
+    if (collections.length === 0) {
+      collectionsEl.textContent = 'Нет локальных коллекций';
+      setCss('');
+      setError('В файле нет локальных Variable Collections.');
+      updateExportEnabled();
+      return;
+    }
+
+    for (const collection of collections) {
+      const label = document.createElement('label');
+      label.className = 'collection-item';
+
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.value = collection.id;
+      input.addEventListener('change', () => {
+        setStatus('');
+        updateExportEnabled();
+      });
+
+      const name = document.createElement('span');
+      name.textContent = collection.name;
+      name.title = collection.name;
+
+      label.appendChild(input);
+      label.appendChild(name);
+      collectionsEl.appendChild(label);
+    }
+
+    updateExportEnabled();
+  }
+
+  exportButton.onclick = () => {
+    const collectionIds = getSelectedCollectionIds();
+    if (collectionIds.length === 0) {
+      return;
+    }
+    setError('');
+    setStatus('Экспорт…');
+    post({ type: 'export-collections', collectionIds });
+  };
+
+  copyButton.onclick = async () => {
+    const text = cssArea.value;
+    if (!text) {
+      return;
+    }
+    const ok = await copyText(text);
+    if (ok) {
+      setStatus('Скопировано', 'ok');
+      return;
+    }
+    cssArea.focus();
+    cssArea.select();
+    setStatus('Выделите текст и скопируйте вручную (⌘C)', 'error');
+  };
+
+  closeButton.onclick = () => {
+    post({ type: 'close' });
+  };
+
+  onmessage = (event) => {
+    const msg = event.data.pluginMessage;
+    if (!msg) {
+      return;
+    }
+
+    if (msg.type === 'collections') {
+      renderCollections(msg.collections || []);
+      return;
+    }
+
+    if (msg.type === 'export-result') {
+      setError('');
+      setCss(msg.css);
+      setStatus('Готово', 'ok');
+      return;
+    }
+
+    if (msg.type === 'export-error') {
+      setCss('');
+      setError(msg.message || 'Ошибка экспорта');
+      setStatus('', 'error');
+    }
+  };
+
+  post({ type: 'ready' });
+</script>

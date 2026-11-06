@@ -1,0 +1,46 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  font-family: var(--tds-font-sans);
+  font-size: var(--tds-font-size-md);
+  font-weight: var(--tds-font-weight-regular);
+  line-height: var(--tds-line-height-normal);
+  color: var(--fg-main);
+  background: var(--bg-calm);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+code {
+  font-family: var(--tds-font-mono);
+  font-size: 0.95em;
+}
+
+:focus-visible {
+  outline: 2px solid var(--br-lead-loud-enabled);
+  outline-offset: 2px;
+}
