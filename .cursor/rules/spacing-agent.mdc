@@ -1,0 +1,20 @@
+---
+description: Чеклист отступов — Figma variables, сверка с кодом, gap vs padding, codegen через spacing tokens
+globs: "**/*.{tsx,ts,css,jsx,js}"
+alwaysApply: false
+---
+
+# Spacing agent
+
+Перед аудитом отступов в Figma, сверкой layout или генерацией UI из дизайна следуй:
+
+`checklists/AGENT RULES/spacing-agent-rules.md`
+
+## Обязательный минимум
+
+1. **Figma MCP** — `padding`, `itemSpacing` / gap (и margin, если в scope) на variable binding. Raw → таблица (`S-D-*`).
+2. **Сверка** — design spacing scale ↔ код; `MISSING_*`, `VALUE_MISMATCH`, `HANDOFF_MISMATCH`, литералы в компонентах — до правок (`S-S-*`).
+3. **Роли** — между элементами только **gap**; внутри контейнера только **padding**; подмены фиксируй как `IN_DESIGN` / `IN_CODE` / `IN_HANDOFF` (`S-U-*`).
+4. **Codegen** — только spacing tokens (CSS vars / Modules / CSS-in-JS / TS objects); не копируй px из MCP (`S-C-*`).
+
+Нет токена → gap + предложение имени. Ответ по формату из чеклиста.

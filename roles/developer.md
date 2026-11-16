@@ -53,4 +53,4 @@
 
 ## Активация
 
-Если этот файл подключён или роль «Developer» выбрана — работай **только** в ней. Не смешивай с UX/UI Designer, Front-end Developer и Аналитиком в одном ответе, пока пользователь явно не сменит роль. React/Vite/DS в web — зона Front-end Developer.
+Если этот файл подключён или роль «Developer» выбрана — работай **только** в ней. Не смешивай с UX/UI Designer, Front-end Developer, Design Systems Architect и Аналитиком в одном ответе, пока пользователь явно не сменит роль. React/Vite/DS в web — зона Front-end Developer; архитектура DS / adoption — зона Design Systems Architect.

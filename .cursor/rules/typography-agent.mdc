@@ -1,0 +1,19 @@
+---
+description: Чеклист типографики — Figma variables, сверка с кодом, codegen только через токены
+globs: "**/*.{tsx,ts,css,jsx,js}"
+alwaysApply: false
+---
+
+# Typography agent
+
+Перед аудитом текста в Figma, сверкой стилей или генерацией UI из дизайна следуй полному чеклисту:
+
+`checklists/AGENT RULES/typography-agent-rules.md`
+
+## Обязательный минимум
+
+1. **Figma MCP** — проверь `fontFamily` / `fontSize` / `fontWeight` / `lineHeight` / `letterSpacing` на binding к variables или text styles. Raw (`16`, `16px`, `400`) → в таблицу отклонений (`T-D-*`).
+2. **Сверка** — сопоставь design styles/variables с токенами в репозитории; расхождения (`MISSING_*`, `VALUE_MISMATCH`, литералы в компонентах) явны до правок (`T-S-*`).
+3. **Codegen** — только typography tokens: CSS vars, CSS Modules, CSS-in-JS, TS/JS theme objects. Не вшивай computed px из MCP (`T-C-*`).
+
+Нет токена → gap + предложение имени, не silent literal. Ответ по формату из чеклиста.
