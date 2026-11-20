@@ -7,11 +7,11 @@
 ## Файлы
 
 | Файл | Роль | Фокус |
-|------|------|--------|
+| ---- | ---- | ----- |
 | [ux-ui-designer.md](ux-ui-designer.md) | UX/UI Designer | Удобство и визуальный баланс инструмента |
 | [developer.md](developer.md) | Developer | Качество и функциональность реализации (Figma plugins / tooling) |
-| [frontend-developer.md](frontend-developer.md) | Front-end Developer | React, CSS, Vite, unit-тесты, pipeline, DS, FE-архитектура |
-| [design-systems-architect.md](design-systems-architect.md) | Design Systems Architect | Архитектура DS, adoption, токены, web↔native, governance |
+| [frontend-developer.md](frontend-developer.md) | Front-end Developer | React, CSS, Vite, тесты, CI, DS в коде |
+| [design-systems-architect.md](design-systems-architect.md) | Design Systems Architect | Архитектура DS, токены, adoption, governance, B2C/B2B/B2G |
 | [analyst.md](analyst.md) | Аналитик | Релевантность реализации (scope, AC, ценность) |
 
 ## Как использовать
@@ -26,7 +26,7 @@
 - **Интерфейс, UX-флоу, визуальный баланс, empty/error states, плотность panel** → `ux-ui-designer.md`
 - **Плагины Figma, main/UI messaging, Variables API, обходы документа** → `developer.md`
 - **React/CSS/Vite, unit-тесты, CI pipeline, design system в коде, FE-архитектура** → `frontend-developer.md`
-- **Архитектура DS, adoption, слои токенов, multi-platform, governance, миграции** → `design-systems-architect.md`
+- **Архитектура DS, adoption, слои токенов (type/color/space/grid), multi-platform, governance, миграции, B2C/B2B/B2G** → `design-systems-architect.md`
 - **Требования, scope, «нужно ли это», acceptance criteria, приоритеты, roadmap** → `analyst.md`
 
 ## Смешанные задачи

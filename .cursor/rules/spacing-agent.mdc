@@ -13,8 +13,10 @@ alwaysApply: false
 ## Обязательный минимум
 
 1. **Figma MCP** — `padding`, `itemSpacing` / gap (и margin, если в scope) на variable binding. Raw → таблица (`S-D-*`).
-2. **Сверка** — design spacing scale ↔ код; `MISSING_*`, `VALUE_MISMATCH`, `HANDOFF_MISMATCH`, литералы в компонентах — до правок (`S-S-*`).
-3. **Роли** — между элементами только **gap**; внутри контейнера только **padding**; подмены фиксируй как `IN_DESIGN` / `IN_CODE` / `IN_HANDOFF` (`S-U-*`).
-4. **Codegen** — только spacing tokens (CSS vars / Modules / CSS-in-JS / TS objects); не копируй px из MCP (`S-C-*`).
+2. **Semantic** — каждый semantic token = alias на primitive; raw в semantic → `SEMANTIC_HARDCODE` / `MISSING_ALIAS` (`S-D-*`, `S-S-*`).
+3. **Сверка** — design spacing scale ↔ код; `MISSING_*`, `VALUE_MISMATCH`, `HANDOFF_MISMATCH`, литералы в компонентах — до правок (`S-S-*`).
+4. **Роли** — между элементами только **gap**; внутри контейнера только **padding**; подмены фиксируй как `IN_DESIGN` / `IN_CODE` / `IN_HANDOFF` (`S-U-*`).
+5. **Слои** — **layout** tokens только для экранов/секций/сеток; **component** tokens только для композиции внутри компонентов; иначе `LAYER_MISUSE` (`S-U-*`).
+6. **Codegen** — только spacing tokens (CSS vars / Modules / CSS-in-JS / TS objects / XML); не копируй px из MCP; свойство и слой по роли (`S-C-*`).
 
-Нет токена → gap + предложение имени. Ответ по формату из чеклиста.
+Нет токена → gap + предложение имени + слой. Ответ по формату из чеклиста.

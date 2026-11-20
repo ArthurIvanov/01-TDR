@@ -1,87 +1,145 @@
 # Правила типографики для ИИ-агентов
 
-Для агентов, сверяющих **Figma ↔ код** и генерирующих компоненты дизайн-системы. Платформа: web (и любой UI-слой, где есть текстовые стили). Цель: **только токены типографики**, без «сырых» значений в дизайне и в коде.
+Универсальный чеклист для Claude, Cursor, ChatGPT и др. Платформа: web и смежные поставки DS (CSS / SCSS / CSS-in-JS / TS objects / XML и т.п.). Фокус: **токены типографики**, сверка Figma ↔ код, codegen без литералов.
 
-ID: `T-D-` — дизайн (Figma MCP), `T-S-` — сверка дизайн↔код, `T-C-` — создание/генерация кода.
+Cursor-правило-зеркало: `.cursor/rules/typography-agent.mdc`. Держи оба согласованными при правках.
 
-Связанные роли: `roles/design-systems-architect.md`, `roles/frontend-developer.md`, `roles/ux-ui-designer.md`.
+**Как читать:** `P0` — блокер handoff / релиза, `P1` — обязательно исправить в спринте. ID (`T-D-`, `T-S-`, `T-C-`) стабильны: ссылайтесь на них в задачах и PR.
 
-## Правила
+---
 
-1. **Источник правды** — переменные / text styles / токены типографики в Figma и их контракт в коде. Литералы (`16px`, `400`, `#000`, `1.5`) в продуктовом UI — дефект, пока нет явного исключения.
-2. **Сначала аудит дизайна через Figma MCP**, потом сверка с репозиторием, потом генерация кода. Не генерируй стили «на глаз» по скриншоту.
-3. **Стек не важен:** CSS Modules, CSS variables, CSS-in-JS, TS/JS theme objects — везде ссылки на токены, не на вычисленные литералы.
-4. **Не выдумывай токены.** Нет матча в дизайн-системе → зафиксируй gap, предложи имя по конвенции проекта, не вшивай magическое значение в компонент.
-5. **Расхождения дизайн↔код** всегда явны в ответе (таблица), даже если правишь одну сторону.
-6. **Исключения** (brand lockup, one-off marketing) помечай `EXCEPTION` + обоснование; иначе — fail.
+## Когда применять
 
-## Часть 1. Дизайн (Figma MCP) — `T-D-`
+- Аудит макета / компонента в Figma через **MCP Figma Server**
+- Сверка text styles / variables дизайна с токенами в репозитории
+- Генерация или правка UI из дизайна (любой стек стилей)
 
-Используй Figma MCP (`get_design_context`, `get_variable_defs`, `get_metadata`, при необходимости `get_screenshot`). Не утверждай привязку к variable без данных из MCP.
+## Жёсткие правила
 
-Свойства типографики к проверке: `fontFamily`, `fontSize`, `fontWeight` / `fontStyle`, `lineHeight`, `letterSpacing`, `textCase`, `paragraphSpacing` (если есть в контракте).
+1. **Только токены:** `fontFamily`, `fontSize`, `fontWeight`, `lineHeight`, `letterSpacing` (и связанные: `paragraphSpacing`, `textCase`, `textDecoration` — если есть в контракте DS) берутся из typography-токенов или text styles, связанных с ними. Сырые значения (`16`, `16px`, `400`, `#000`, `'Inter'`) в продуктовом коде и в «готовом» дизайне — дефект.
+2. **Не молчи о хардкоде:** найденный литерал → строка в таблице отклонений с ID, узлом/файлом и предложенным токеном. Не «исправляй тихо», подставляя угаданный px.
+3. **Нет токена → gap, не silent literal:** предложи имя (по конвенции репозитория), статус `MISSING_TOKEN`, не вшивай computed px из MCP.
+4. **Расхождение дизайн ↔ код — дефект контракта**, не вкусовщина: фиксируй до правок (`VALUE_MISMATCH`, `MISSING_IN_CODE`, `MISSING_IN_DESIGN`, `NAME_MISMATCH`).
+5. **Semantic → только alias на primitive:** каждый semantic-токен обязан ссылаться на primitive (или цепочку alias, оканчивающуюся primitive). Прямое значение (`16`, `16px`, `400`, `'Inter'`) в semantic — дефект (`SEMANTIC_HARDCODE` / `MISSING_ALIAS`). Хардкод допустим **только** в primitive-слое.
+6. **Стек не важен:** CSS custom properties, SCSS maps, CSS Modules, styled-components / emotion, Tailwind theme keys, TS/JS theme objects, Android XML / Compose TextStyle, iOS Dynamic Type — везде ссылка на токен/alias, не на сырое число.
+7. **Не выдумывай шкалу:** если в репозитории нет typography tokens — останови codegen, перечисли open questions, предложи минимальный контракт (имена + слои), не изобретай параллельную шкалу «на глаз».
 
-- [ ] **T-D-01** Для целевого node (и вложенного текста) собраны фактические typography-свойства через MCP, не «по памяти».
-- [ ] **T-D-02** Каждое typography-свойство привязано к **variable** и/или **text style** из библиотеки / local variables.
-- [ ] **T-D-03** Если значение **простое / raw** (число, px, % без variable binding) — зафиксируй: node id, свойство, значение, ожидаемый токен/style (если известен).
-- [ ] **T-D-04** Text styles не дублируют друг друга с разными именами и теми же raw-значениями без variable alias — отметь как drift.
-- [ ] **T-D-05** Режимы (light/dark, brand, density), влияющие на type scale, проверены или явно помечены как out of scope аудита.
+---
 
-### Формат отклонений дизайна
+## Фаза 1. Проверка дизайна (MCP Figma Server)
 
-| Node | Property | Actual | Bound? | Expected token/style | Severity |
-|------|----------|--------|--------|----------------------|----------|
-| … | fontSize | 15 | no | `--tds-font-size-md` / `Body/M` | P0 |
+Инструменты: `get_design_context`, `get_variable_defs`, `get_metadata`, `get_screenshot` — по необходимости; сначала variables / text styles, потом computed styles узлов.
 
-`P0` — raw в компоненте DS / ключевом UI; `P1` — raw в маркетинговом/черновом фрейме; `P2` — косметический drift имён.
+### Что считать «токеном» в Figma
 
-## Часть 2. Сверка с кодовой базой — `T-S-`
+| Источник | OK | Не OK |
+|---|---|---|
+| Variable bound к `fontSize` / `fontWeight` / `lineHeight` / `letterSpacing` / family | да | — |
+| Semantic variable = alias на primitive | да | Semantic с raw value (`SEMANTIC_HARDCODE`) |
+| Text style, у которого поля завязаны на variables (или на единый DS text style из библиотеки) | да | Text style с захардкоженными числами без variables — пометить как риск |
+| Локальный override: `fontSize: 15` на инстансе | — | хардкод (`HARDCODED_OVERRIDE`) |
+| MCP вернул только computed px без variable id / style id | — | трактовать как несвязанное значение, пока не доказано иное |
 
-Найди в репозитории слой токенов типографики (например `foundation.css`, `tokens`, theme object) и места использования (компоненты, глобальные стили).
+### Чеклист
 
-- [ ] **T-S-01** Построен список токенов/ключей типографики **в коде** (имена + значения или alias-цепочки).
-- [ ] **T-S-02** Построен список text styles / typography variables **из дизайна** (из MCP).
-- [ ] **T-S-03** Сопоставлены пары дизайн↔код по семантике (не только по строке имени). Нет пары → `MISSING_IN_CODE` или `MISSING_IN_DESIGN`.
-- [ ] **T-S-04** При одном имени / роли разные значения — `VALUE_MISMATCH` (дизайн vs код).
-- [ ] **T-S-05** В коде найдены литералы типографики вне слоя токенов (в компонентах / CSS Modules / styled / theme overrides) — перечислить файлы и строки/селекторы.
-- [ ] **T-S-06** Итог сверки включён в ответ **до** любых правок или генерации кода.
+- [ ] **T-D-01 P0** Для проверяемых текстовых узлов зафиксированы: node id, text style (если есть), variable bindings по полям типографики.
+- [ ] **T-D-02 P0** Каждое поле (`fontFamily`, `fontSize`, `fontWeight`, `lineHeight`, `letterSpacing`) либо bound к variable / DS text style, либо занесено в отклонения.
+- [ ] **T-D-03 P0** Хардкод и локальные overrides перечислены явно (узел, свойство, значение, ожидаемый токен или `UNKNOWN`).
+- [ ] **T-D-04 P1** Имена variables / styles сверены с конвенцией DS (primitive → semantic → component); сырые primitive в UI-слое без semantic alias — отметить.
+- [ ] **T-D-05 P0** Каждый semantic typography variable в scope — alias на primitive (или цепочка до primitive); raw value в semantic → `SEMANTIC_HARDCODE` / `MISSING_ALIAS`.
+- [ ] **T-D-06 P1** Один визуальный роль-уровень (например heading/body/caption) не размазан по разным несвязанным значениям на одном экране без обоснования.
+- [ ] **T-D-07 P1** Если MCP отдал только computed styles — не выдавать их за «токены»; запросить / дочитать `get_variable_defs` и bindings.
+
+### Формат отклонений (дизайн)
+
+| ID | Node / Style | Property | Found | Expected token | Kind |
+|---|---|---|---|---|---|
+| T-D-… | `12:34` / `Body/M` | fontSize | `15` | `font.size.md` или `UNKNOWN` | `HARDCODED` / `UNBOUND` / `OVERRIDE` / `SEMANTIC_HARDCODE` / `MISSING_ALIAS` |
+
+---
+
+## Фаза 2. Сверка с кодовой базой
+
+Цель: понять, какие стили есть в дизайне и какие токены/стили есть в коде; все расхождения — до реализации.
+
+### Источники в коде (искать по репозиторию)
+
+- Token packages / theme: `tokens`, `typography`, `fontSize`, `lineHeight`, `fontWeight`, `letterSpacing`
+- CSS: `--font-*`, `--text-*`, `@mixin` / maps
+- CSS-in-JS / TS: `theme.typography`, `textStyles`, `fonts`
+- Платформенные: `TextAppearance`, `TextStyle`, XML `dimens` / style refs
+
+### Чеклист
+
+- [ ] **T-S-01 P0** Построен список typography tokens / text styles из кода (имя → значение или alias-цепочка).
+- [ ] **T-S-02 P0** Каждый style / variable из дизайна сопоставлен с кодом: совпадение имени **и** значения (с учётом единиц: px/rem/%/unitless line-height).
+- [ ] **T-S-03 P0** Расхождения классифицированы: `MISSING_IN_CODE` · `MISSING_IN_DESIGN` · `VALUE_MISMATCH` · `NAME_MISMATCH` · `LITERAL_IN_COMPONENT` · `SEMANTIC_HARDCODE` · `MISSING_ALIAS`.
+- [ ] **T-S-04 P0** Литералы типографики в компонентах продукта (вне token layer) найдены поиском и перечислены; не списывать на «временный UI».
+- [ ] **T-S-05 P0** Все semantic typography tokens в коде — alias на primitive (нет inline raw); обрыв цепочки или raw в semantic → `MISSING_ALIAS` / `SEMANTIC_HARDCODE`.
+- [ ] **T-S-06 P1** В UI ожидаются semantic / component tokens, не «голые» primitive, если так принято в DS.
+- [ ] **T-S-07 P1** Перед правками показана таблица сверки; правки без сверки запрещены.
 
 ### Формат сверки
 
-| Role / style | Design | Code | Status |
-|--------------|--------|------|--------|
-| Body/M fontSize | 16 → var | `--tds-font-size-md: 1rem` | OK |
-| Title/L weight | 600 raw | `--tds-font-weight-semibold` | VALUE_MISMATCH / unbound design |
+| Design token / style | Code token | Alias → primitive | Design value | Code value | Status |
+|---|---|---|---|---|---|
+| `text/body/md` | `typography.body.md` | `font.size.16` / `font.line.24` | 16/24 | 16/24 | `OK` |
+| `text/body/md` | `typography.body.md` | _(raw `16`)_ | 16/24 | 16 | `SEMANTIC_HARDCODE` |
+| `text/caption` | — | — | 12/16 | — | `MISSING_IN_CODE` |
 
-## Часть 3. Создание компонентов и codegen — `T-C-`
+---
 
-При генерации или правке UI из дизайна:
+## Фаза 3. Реализация / codegen из дизайна
 
-- [ ] **T-C-01** `font-family`, `font-size`, `font-weight`, `line-height`, `letter-spacing` задаются **только** через токены проекта.
-- [ ] **T-C-02** Технология не меняет правило:
-  - CSS / CSS Modules → `var(--…)` или class, завязанный на токены
-  - CSS-in-JS → `theme.fontSizes.md` / tokens object, не `'14px'`
-  - TS/JS objects → ключи токенов, экспортируемые из DS; в runtime — те же токены
-- [ ] **T-C-03** Запрещено копировать computed px из MCP в код «как есть», если в системе есть токен; нет токена → gap + предложение токена, не silent literal.
-- [ ] **T-C-04** Компонент не вводит локальные «одноразовые» type tokens без записи в foundation / theme layer (или явного ADR/EXCEPTION).
-- [ ] **T-C-05** После генерации — быстрый self-check: поиск литералов (`px`, голые `font-weight: 500`, `'IBM Plex Sans'` вне token file) в затронутых файлах.
+Генерация и правки кода — **только** через typography tokens целевого стека.
+
+### Чеклист
+
+- [ ] **T-C-01 P0** В сгенерированном коде нет сырых `font-size` / `font-weight` / `line-height` / `letter-spacing` / family literals (кроме слоя определения самих токенов).
+- [ ] **T-C-02 P0** Значения из MCP (`fontSize: 16` и т.п.) не копируются в компонент; используется имя токена из фазы 2.
+- [ ] **T-C-03 P0** Технология вывода соблюдает контракт репозитория:
+
+  | Стек | Ожидаемая ссылка (пример) |
+  |---|---|
+  | CSS / CSS Modules | `var(--font-size-md)` / class из DS |
+  | SCSS | `map-get` / mixin / CSS var из tokens |
+  | CSS-in-JS | `theme.typography.bodyMd` / `css\`font: ${tokens...}\`` |
+  | TS / JS object | ключ theme, не `{ fontSize: 16 }` в JSX |
+  | Tailwind | theme key / `@apply` из DS, не `text-[15px]` |
+  | XML / native | `@style` / `TextStyle` / resource ref |
+
+- [ ] **T-C-04 P0** Если токена нет — codegen останавливается на этом свойстве: `MISSING_TOKEN` + предлагаемое имя; допускается временный TODO-комментарий с ID, **не** магическое число.
+- [ ] **T-C-05 P1** Семантика уровня текста (heading / body / label) сохранена именем токена, а не угадана по px.
+- [ ] **T-C-06 P1** Не дублировать шкалу локально в компоненте («свой» `fontSizes` рядом с DS).
+
+---
 
 ## Самопроверка перед ответом
 
-- [ ] Figma MCP использован (или явно недоступен → блокер / ручной handoff)
-- [ ] Все raw typography в дизайне перечислены
-- [ ] Таблица сверки дизайн↔код присутствует
-- [ ] Новый/изменённый код ссылается только на typography tokens
-- [ ] Gaps и EXCEPTION названы; ничего не угадано
+- [ ] Figma: bindings проверены; хардкод в таблице `T-D-*`
+- [ ] Semantic → alias на primitive (дизайн и код); нет `SEMANTIC_HARDCODE`
+- [ ] Код: сверка сделана; статусы `T-S-*` явны
+- [ ] Codegen / правки: только токены; нет computed px из MCP (`T-C-*`)
+- [ ] Пробелы токенов = gap + имя, не silent literal
+- [ ] Допущения и вопросы перечислены
 
 ## Формат ответа
 
 ```
-Роль: …
-Scope (node / files):
-T-D (дизайн): OK | N raw — таблица
-T-S (сверка): OK | mismatches — таблица
-T-C (код): что сделано / почему через какие токены
-Отклонения и EXCEPTION:
-Вопросы / gaps токенов:
+Объект (фрейм / компонент / файлы):
+Проверено (ID): T-D-xx, T-S-xx, T-C-xx, ...
+Отклонения дизайна (хардкод / unbound / semantic без alias):
+Сверка дизайн ↔ код (вкл. alias → primitive):
+Пробелы токенов (предложенные имена):
+Изменения в коде (только через токены):
+Допущения:
+Вопросы:
+```
+
+Краткий минимум при мелкой правке:
+
+```
+Проверено: …
+Отклонения: …
+Токены в коде: …
 ```

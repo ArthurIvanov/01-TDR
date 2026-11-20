@@ -1,0 +1,30 @@
+.section {
+    display: grid;
+    grid-template-columns: 256px 1fr;
+    grid-template-rows: 1fr 72px;
+    height: 100vh;
+    gap: 16px;
+}
+
+.padding {
+    padding: 16px;
+}
+
+.aside {
+    background-color: #FF4747;
+    grid-column: 1/2;
+    grid-row: 1/3
+}
+
+.main {
+    background-color: #00EE6B;
+    grid-column: 2/3;
+    grid-row: 1/2;
+}
+
+.footer {
+    background-color: #0496FF;
+    grid-column: 2/3;
+    grid-row: 2/3;
+
+}
