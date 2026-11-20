@@ -36,7 +36,8 @@
     padding: 0;
     width: 100%;
     height: 100%;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     background: var(--bg);
     color: var(--fg);
     font: 12px/1.4 var(--sans);
@@ -47,7 +48,7 @@
     flex-direction: column;
     gap: 10px;
     padding: 12px 16px 16px;
-    min-height: 0;
+    min-height: 100%;
   }
 
   h1 {
@@ -69,24 +70,112 @@
     color: var(--muted);
   }
 
-  .collections-wrap {
+  .collections-wrap,
+  .prefix-wrap {
+    position: relative;
     flex: 0 0 auto;
+    z-index: 20;
+  }
+
+  .prefix-wrap {
+    z-index: 1;
   }
 
   button,
+  input,
   textarea {
     font: inherit;
   }
 
-  .collection-list {
-    max-height: 112px;
-    overflow: auto;
+  input[type='text'] {
+    display: block;
+    width: 100%;
+    height: 32px;
+    padding: 6px 10px;
     border: 1px solid var(--border);
     border-radius: 6px;
-    padding: 4px;
+    background: var(--bg);
+    color: var(--fg);
   }
 
-  .collection-item {
+  input[type='text']::placeholder {
+    color: var(--muted);
+  }
+
+  .prefix-hint {
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  .ms {
+    position: relative;
+  }
+
+  .ms-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    min-height: 32px;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--fg);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .ms-trigger:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+
+  .ms-trigger[aria-expanded='true'] {
+    border-color: var(--fg);
+  }
+
+  .ms-value {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--fg);
+  }
+
+  .ms-value.is-placeholder {
+    color: var(--muted);
+  }
+
+  .ms-chevron {
+    flex: 0 0 auto;
+    color: var(--muted);
+    font-size: 10px;
+    line-height: 1;
+  }
+
+  .ms-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    max-height: 180px;
+    overflow: auto;
+    padding: 4px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    box-shadow: 0 8px 20px color-mix(in srgb, var(--fg) 12%, transparent);
+  }
+
+  .ms-dropdown[hidden] {
+    display: none;
+  }
+
+  .ms-option {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -95,40 +184,50 @@
     cursor: pointer;
   }
 
-  .collection-item:hover {
+  .ms-option:hover {
     background: color-mix(in srgb, var(--fg) 6%, transparent);
   }
 
-  .collection-item input {
+  .ms-option-all {
+    margin-bottom: 2px;
+    border-bottom: 1px solid var(--border);
+    border-radius: 4px 4px 0 0;
+    font-weight: 600;
+  }
+
+  .ms-option input {
     margin: 0;
     flex: 0 0 auto;
   }
 
-  .collection-item span {
+  .ms-option span {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
+  .ms-empty {
+    padding: 8px;
+    color: var(--muted);
+  }
+
   .preview-wrap {
     display: flex;
     flex-direction: column;
-    flex: 1 1 auto;
-    min-height: 0;
+    flex: 0 0 auto;
     gap: 6px;
-    overflow: hidden;
   }
 
-  textarea {
+  textarea#output {
     display: block;
     width: 100%;
-    flex: 1 1 auto;
-    min-height: 0;
-    height: 100%;
+    height: 240px;
+    min-height: 120px;
+    max-height: 70vh;
     padding: 10px;
     border: 1px solid var(--border);
     border-radius: 6px;
-    resize: none;
+    resize: vertical;
     overflow: auto;
     background: var(--bg);
     color: var(--fg);
@@ -196,26 +295,58 @@
   }
 </style>
 
-<h1>COLOR → CSS</h1>
-<p class="hint">Выберите одну или несколько коллекций (например _palette + semantic).</p>
+<h1>Variables → CSS</h1>
+<p class="hint">Типы переменных определяются по выбранным коллекциям; локальные Text Styles добавляются автоматически.</p>
 
 <div class="collections-wrap">
   <span class="field-label" id="collections-label">Коллекции</span>
-  <div
-    id="collections"
-    class="collection-list"
-    role="group"
-    aria-labelledby="collections-label"
-  >
-    Загрузка…
+  <div class="ms" id="collections-ms">
+    <button
+      type="button"
+      class="ms-trigger"
+      id="collections-trigger"
+      aria-labelledby="collections-label"
+      aria-haspopup="listbox"
+      aria-expanded="false"
+      aria-controls="collections-dropdown"
+      disabled
+    >
+      <span class="ms-value is-placeholder" id="collections-value">Загрузка…</span>
+      <span class="ms-chevron" aria-hidden="true">▾</span>
+    </button>
+    <div
+      class="ms-dropdown"
+      id="collections-dropdown"
+      role="listbox"
+      aria-multiselectable="true"
+      aria-labelledby="collections-label"
+      hidden
+    ></div>
   </div>
+</div>
+
+<div class="prefix-wrap">
+  <label class="field-label" for="prefix">Префикс</label>
+  <input
+    id="prefix"
+    type="text"
+    value="tdr"
+    placeholder="tdr"
+    autocomplete="off"
+    spellcheck="false"
+  />
+  <p class="prefix-hint">Пример: --tdr-bg-primary, .tdr-text-body-m</p>
 </div>
 
 <div id="error" class="error-box" role="alert"></div>
 
 <div class="preview-wrap">
-  <label class="field-label" for="css">CSS</label>
-  <textarea id="css" readonly placeholder="Отметьте коллекции и нажмите «Экспортировать»"></textarea>
+  <label class="field-label" for="output">Вывод</label>
+  <textarea
+    id="output"
+    readonly
+    placeholder="Выберите коллекции и нажмите «Экспортировать»"
+  ></textarea>
 </div>
 
 <div class="actions">
@@ -226,13 +357,23 @@
 </div>
 
 <script>
-  const collectionsEl = document.getElementById('collections');
-  const cssArea = document.getElementById('css');
+  const triggerEl = document.getElementById('collections-trigger');
+  const valueEl = document.getElementById('collections-value');
+  const dropdownEl = document.getElementById('collections-dropdown');
+  const prefixInput = document.getElementById('prefix');
+  const outputArea = document.getElementById('output');
   const exportButton = document.getElementById('export');
   const copyButton = document.getElementById('copy');
   const closeButton = document.getElementById('close');
   const statusEl = document.getElementById('status');
   const errorEl = document.getElementById('error');
+
+  let collectionsData = [];
+  let dropdownOpen = false;
+
+  function getPrefix() {
+    return (prefixInput.value || '').trim();
+  }
 
   function setError(message) {
     if (!message) {
@@ -249,8 +390,8 @@
     statusEl.className = 'status' + (kind ? ' ' + kind : '');
   }
 
-  function setCss(css) {
-    cssArea.value = css || '';
+  function setOutput(css) {
+    outputArea.value = css || '';
     copyButton.disabled = !css;
   }
 
@@ -258,14 +399,76 @@
     parent.postMessage({ pluginMessage: message }, '*');
   }
 
-  function getSelectedCollectionIds() {
+  function getCollectionCheckboxes() {
     return Array.from(
-      collectionsEl.querySelectorAll('input[type="checkbox"]:checked')
-    ).map((input) => input.value);
+      dropdownEl.querySelectorAll('input[type="checkbox"][data-collection="true"]')
+    );
+  }
+
+  function getSelectAllCheckbox() {
+    return dropdownEl.querySelector('#collections-select-all');
+  }
+
+  function getSelectedCollectionIds() {
+    return getCollectionCheckboxes()
+      .filter((input) => input.checked)
+      .map((input) => input.value);
+  }
+
+  function getSelectedCollectionNames() {
+    return getCollectionCheckboxes()
+      .filter((input) => input.checked)
+      .map((input) => {
+        const label = input.closest('label');
+        const span = label && label.querySelector('span');
+        return span ? span.textContent : input.value;
+      });
+  }
+
+  function syncSelectAllState() {
+    const selectAll = getSelectAllCheckbox();
+    if (!selectAll) {
+      return;
+    }
+    const boxes = getCollectionCheckboxes();
+    const checkedCount = boxes.filter((input) => input.checked).length;
+    selectAll.checked = boxes.length > 0 && checkedCount === boxes.length;
+    selectAll.indeterminate = checkedCount > 0 && checkedCount < boxes.length;
+  }
+
+  function updateTriggerLabel() {
+    const names = getSelectedCollectionNames();
+    if (names.length === 0) {
+      valueEl.textContent =
+        collectionsData.length === 0 ? 'Нет коллекций' : 'Выберите коллекции';
+      valueEl.classList.add('is-placeholder');
+      syncSelectAllState();
+      return;
+    }
+    valueEl.textContent =
+      names.length <= 2 ? names.join(', ') : names[0] + ' +' + (names.length - 1);
+    valueEl.classList.remove('is-placeholder');
+    syncSelectAllState();
   }
 
   function updateExportEnabled() {
-    exportButton.disabled = getSelectedCollectionIds().length === 0;
+    exportButton.disabled =
+      triggerEl.disabled || getSelectedCollectionIds().length === 0;
+  }
+
+  function onCollectionSelectionChange() {
+    setStatus('');
+    updateTriggerLabel();
+    updateExportEnabled();
+  }
+
+  function setDropdownOpen(open) {
+    if (triggerEl.disabled) {
+      open = false;
+    }
+    dropdownOpen = open;
+    triggerEl.setAttribute('aria-expanded', open ? 'true' : 'false');
+    dropdownEl.hidden = !open;
   }
 
   function copyViaExecCommand(text) {
@@ -310,27 +513,59 @@
   }
 
   function renderCollections(collections) {
-    collectionsEl.innerHTML = '';
+    collectionsData = collections.slice();
+    dropdownEl.innerHTML = '';
+    setDropdownOpen(false);
 
     if (collections.length === 0) {
-      collectionsEl.textContent = 'Нет локальных коллекций';
-      setCss('');
+      const empty = document.createElement('div');
+      empty.className = 'ms-empty';
+      empty.textContent = 'Нет локальных коллекций';
+      dropdownEl.appendChild(empty);
+      triggerEl.disabled = true;
+      valueEl.textContent = 'Нет коллекций';
+      valueEl.classList.add('is-placeholder');
+      setOutput('');
       setError('В файле нет локальных Variable Collections.');
       updateExportEnabled();
       return;
     }
 
+    triggerEl.disabled = false;
+    setError('');
+
+    const selectAllLabel = document.createElement('label');
+    selectAllLabel.className = 'ms-option ms-option-all';
+
+    const selectAllInput = document.createElement('input');
+    selectAllInput.type = 'checkbox';
+    selectAllInput.id = 'collections-select-all';
+    selectAllInput.addEventListener('change', () => {
+      const checked = selectAllInput.checked;
+      for (const input of getCollectionCheckboxes()) {
+        input.checked = checked;
+      }
+      selectAllInput.indeterminate = false;
+      onCollectionSelectionChange();
+    });
+
+    const selectAllName = document.createElement('span');
+    selectAllName.textContent = 'Выбрать все';
+
+    selectAllLabel.appendChild(selectAllInput);
+    selectAllLabel.appendChild(selectAllName);
+    dropdownEl.appendChild(selectAllLabel);
+
     for (const collection of collections) {
       const label = document.createElement('label');
-      label.className = 'collection-item';
+      label.className = 'ms-option';
+      label.setAttribute('role', 'option');
 
       const input = document.createElement('input');
       input.type = 'checkbox';
       input.value = collection.id;
-      input.addEventListener('change', () => {
-        setStatus('');
-        updateExportEnabled();
-      });
+      input.dataset.collection = 'true';
+      input.addEventListener('change', onCollectionSelectionChange);
 
       const name = document.createElement('span');
       name.textContent = collection.name;
@@ -338,24 +573,56 @@
 
       label.appendChild(input);
       label.appendChild(name);
-      collectionsEl.appendChild(label);
+      dropdownEl.appendChild(label);
     }
 
+    updateTriggerLabel();
     updateExportEnabled();
   }
+
+  triggerEl.addEventListener('click', (event) => {
+    event.stopPropagation();
+    if (triggerEl.disabled) {
+      return;
+    }
+    setDropdownOpen(!dropdownOpen);
+  });
+
+  dropdownEl.addEventListener('click', (event) => {
+    event.stopPropagation();
+  });
+
+  document.addEventListener('click', () => {
+    if (dropdownOpen) {
+      setDropdownOpen(false);
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && dropdownOpen) {
+      setDropdownOpen(false);
+      triggerEl.focus();
+    }
+  });
 
   exportButton.onclick = () => {
     const collectionIds = getSelectedCollectionIds();
     if (collectionIds.length === 0) {
       return;
     }
+
+    setDropdownOpen(false);
     setError('');
     setStatus('Экспорт…');
-    post({ type: 'export-collections', collectionIds });
+    post({
+      type: 'export-collections',
+      collectionIds,
+      prefix: getPrefix(),
+    });
   };
 
   copyButton.onclick = async () => {
-    const text = cssArea.value;
+    const text = outputArea.value;
     if (!text) {
       return;
     }
@@ -364,8 +631,8 @@
       setStatus('Скопировано', 'ok');
       return;
     }
-    cssArea.focus();
-    cssArea.select();
+    outputArea.focus();
+    outputArea.select();
     setStatus('Выделите текст и скопируйте вручную (⌘C)', 'error');
   };
 
@@ -380,23 +647,27 @@
     }
 
     if (msg.type === 'collections') {
+      if (typeof msg.prefix === 'string') {
+        prefixInput.value = msg.prefix;
+      }
       renderCollections(msg.collections || []);
       return;
     }
 
     if (msg.type === 'export-result') {
       setError('');
-      setCss(msg.css);
+      setOutput(msg.css);
       setStatus('Готово', 'ok');
       return;
     }
 
     if (msg.type === 'export-error') {
-      setCss('');
+      setOutput('');
       setError(msg.message || 'Ошибка экспорта');
       setStatus('', 'error');
     }
   };
 
+  updateExportEnabled();
   post({ type: 'ready' });
 </script>

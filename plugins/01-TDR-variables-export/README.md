@@ -1,15 +1,20 @@
 # 01-TDR Variables Export
 
-Figma-плагин: экспорт локальных **COLOR** variables в CSS custom properties.
+Figma-плагин: экспорт локальных variables и Text Styles в CSS.
 
 ## Что делает
 
-- Читает локальные COLOR-переменные из **одной или нескольких** Variable Collections
-- Имена: `bg/primary` → `--bg-primary` (пробелы тоже → `-`)
-- Modes: дефолтный (первый mode у первой multi-mode коллекции) и single-mode коллекции → `:root`; остальные → `[data-theme="<имя mode>"]`
-- Alias → `var(--other-token)`
-- Несколько коллекций сливаются в один CSS по селекторам (удобно: `_palette` + semantic)
-- UI: чекбоксы коллекций, «Экспортировать», превью, «Скопировать»
+- Читает локальные variables из **одной или нескольких** Variable Collections
+- Типы определяются **автоматически** по содержимому выбранных коллекций:
+  - **COLOR** → `#rrggbb` / `rgba(...)` / `var(--alias)`
+  - **FLOAT** → `Npx` (spacing / size); имя содержит `weight` → unitless; alias → `var(--…)`
+  - **STRING** → `"value"`; alias → `var(--…)`
+- Имена: `bg/primary` → `--{prefix}-bg-primary` (по умолчанию `tdr`; пробелы → `-`); классы → `.{prefix}-text-…`
+- Префикс настраивается в UI и сохраняется между запусками
+- Modes: single-mode (primitives) → `:root`; дефолтный mode (первый у первой multi-mode) → `:root, [data-theme="<имя>"]`; остальные (dark, highContrast, …) → `[data-theme="<имя mode>"]`
+- Alias → `var(--other-token)` (primitive/_palette + semantic в одном экспорте)
+- Локальные **Text Styles** (если есть) добавляются автоматически → классы `.text-body-m`
+- UI: выпадающий multi-select коллекций, «Экспортировать», resizable textarea «Вывод», «Скопировать»
 
 ## Setup
 
@@ -28,10 +33,11 @@ npm run watch
 
 1. Plugins → Development → Import plugin from manifest…
 2. Выберите `manifest.json` из этой папки
-3. Запустите плагин в файле с локальными variables
-4. Отметьте нужные коллекции (например `_palette` и semantic) → «Экспортировать»
+3. Запустите плагин в файле с локальными variables / text styles
+4. Отметьте коллекции (например `_palette` + semantic + space) → «Экспортировать»
 
 ## Требования
 
 - Локальные Variable Collections с хотя бы одним mode
-- Экспортируются только переменные типа COLOR
+- Локальные Text Styles — опционально (подмешиваются при наличии)
+- BOOLEAN / EASING / TIMING / remote library styles — вне scope
